@@ -1,0 +1,17 @@
+[package]
+name = "adldapsearch"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+base64 = { version = "0.22" }
+bitmask-enum = { version = "2.2" }
+chrono = { version = "0.4" }
+clap = { version = "4.5", features = ["derive"] }
+from-to-repr = { version = "0.2" }
+ldap3 = { version = "0.11" }
+rpassword = { version = "7.3" }
+serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1.41", features = ["full"] }
+toml = { version = "0.8" }
+uuid = { version = "1.11" }
