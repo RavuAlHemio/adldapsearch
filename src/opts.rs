@@ -11,7 +11,7 @@ pub(crate) struct Opts {
     pub url: String,
 
     #[arg(short = 'b', long)]
-    pub base_dn: String,
+    pub base_dn: Option<String>,
 
     #[arg(short = 'D', long)]
     pub bind_dn: Option<String>,

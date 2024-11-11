@@ -2,12 +2,48 @@ mod opts;
 mod values;
 
 
+use std::borrow::Cow;
+
 use clap::Parser;
-use ldap3::{LdapConnAsync, SearchEntry};
+use ldap3::{Ldap, LdapConnAsync, Scope, SearchEntry};
 use rpassword;
 
 use crate::opts::{Credentials, Opts};
 use crate::values::{output_binary_values, output_string_values};
+
+
+const DEFAULT_FILTER: &str = "(objectClass=*)";
+
+
+async fn find_base_dn(ldap: &mut Ldap) -> String {
+    // query rootDSE
+    const NO_ATTRS: [&str; 0] = [];
+    let (results, _response) = ldap.search(
+        "",
+        Scope::Base,
+        DEFAULT_FILTER,
+        &NO_ATTRS,
+    )
+        .await.expect("failed to search for rootDSE")
+        .success().expect("error while searching for rootDSE");
+    for result_entry in results {
+        let entry = SearchEntry::construct(result_entry);
+
+        // take defaultNamingContext if available, first of namingContexts otherwise
+        if let Some(dncs) = entry.attrs.get("defaultNamingContext") {
+            // there should only be one value for defaultNamingContext, but y'know
+            for dnc in dncs {
+                return dnc.clone();
+            }
+        }
+        if let Some(ncs) = entry.attrs.get("namingContexts") {
+            for nc in ncs {
+                return nc.clone();
+            }
+        }
+    }
+    panic!("failed to find base DN from rootDSE; please specify -b/--base-dn");
+}
 
 
 async fn run() {
@@ -41,13 +77,18 @@ async fn run() {
     ldap3::drive!(conn);
 
     let filter = o.filter.as_deref()
-        .unwrap_or("(objectClass=*)");
+        .unwrap_or(DEFAULT_FILTER);
 
     ldap.simple_bind(&bind_dn, &password)
         .await.expect("failed to bind to LDAP server");
 
+    let base_dn = match o.base_dn.as_deref() {
+        Some(bdn) => Cow::Borrowed(bdn),
+        None => Cow::Owned(find_base_dn(&mut ldap).await),
+    };
+
     let (results, _response) = ldap.search(
-        &o.base_dn,
+        &base_dn,
         o.scope.into(),
         filter,
         o.attributes.as_slice(),
