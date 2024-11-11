@@ -126,11 +126,11 @@ fn output_sid_value(key: &str, value: &[u8]) {
     println!();
 }
 
-
 macro_rules! output_as_enum_or_bitflags {
     ($key:expr, $values:expr, $int_type:ty, $enum:ty) => {
         for str_value in $values {
             if let Ok(int_val) = <$int_type>::from_str_radix(&str_value, 10) {
+                #[allow(irrefutable_let_patterns)]
                 if int_val == 0 {
                     println!("{}: {}", $key, int_val);
                 } else if let Ok(enum_val) = <$enum>::try_from(int_val) {
