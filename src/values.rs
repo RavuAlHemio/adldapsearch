@@ -1,5 +1,6 @@
 pub(crate) mod bitmasks;
 pub(crate) mod enums;
+pub(crate) mod oids;
 pub(crate) mod structs;
 
 
@@ -9,6 +10,7 @@ use uuid::Uuid;
 
 use crate::values::bitmasks::{InstanceType, SystemFlags, UserAccountControl};
 use crate::values::enums::{FunctionalityLevel, SamAccountType};
+use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dns::DnsProperty;
 use crate::values::structs::replication::{ReplUpToDateVector2, RepsFromTo};
 
@@ -129,6 +131,15 @@ fn output_sid_value(key: &str, value: &[u8]) {
 }
 
 
+fn output_oid(key: &str, str_value: &str) {
+    if let Some(known_oid) = KNOWN_OIDS.get(str_value) {
+        println!("{}: {} ({})", key, str_value, known_oid);
+    } else {
+        output_string_value_as_string(key, str_value);
+    }
+}
+
+
 macro_rules! output_as_enum_or_bitflags {
     ($key:expr, $values:expr, $int_type:ty, $enum:ty) => {
         for str_value in $values {
@@ -183,6 +194,11 @@ pub(crate) fn handle_special_key(key: &str, values: &[String]) -> bool {
     } else if key == "accountExpires" || key == "lastLogon" || key == "lastLogonTimestamp" || key == "badPasswordTime" || key == "pwdLastSet" || key == "creationTime" {
         for value in values {
             output_timestamp_value(key, value);
+        }
+        true
+    } else if key == "supportedCapabilities" || key == "supportedControl" {
+        for value in values {
+            output_oid(key, value);
         }
         true
     } else {

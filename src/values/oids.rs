@@ -1,0 +1,57 @@
+use std::collections::HashMap;
+use std::sync::LazyLock;
+
+
+pub static KNOWN_OIDS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
+    let mut map = HashMap::new();
+    map.insert("1.2.840.113556.1.4.319", "PAGED_RESULT");
+    map.insert("1.2.840.113556.1.4.417", "SHOW_DELETED");
+    map.insert("1.2.840.113556.1.4.473", "SORT");
+    map.insert("1.2.840.113556.1.4.474", "RESP_SORT");
+    map.insert("1.2.840.113556.1.4.521", "CROSSDOM_MOVE_TARGET");
+    map.insert("1.2.840.113556.1.4.528", "NOTIFICATION");
+    map.insert("1.2.840.113556.1.4.529", "EXTENDED_DN");
+    map.insert("1.2.840.113556.1.4.619", "LAZY_COMMIT");
+    map.insert("1.2.840.113556.1.4.800", "ACTIVE_DIRECTORY");
+    map.insert("1.2.840.113556.1.4.801", "SD_FLAGS");
+    map.insert("1.2.840.113556.1.4.802", "RANGE_OPTION");
+    map.insert("1.2.840.113556.1.4.805", "TREE_DELETE");
+    map.insert("1.2.840.113556.1.4.841", "DIRSYNC");
+    map.insert("1.2.840.113556.1.4.970", "GET_STATS");
+    map.insert("1.2.840.113556.1.4.1338", "VERIFY_NAME");
+    map.insert("1.2.840.113556.1.4.1339", "DOMAIN_SCOPE");
+    map.insert("1.2.840.113556.1.4.1340", "SEARCH_OPTIONS");
+    map.insert("1.2.840.113556.1.4.1341", "RODC_DCPROMO");
+    map.insert("1.2.840.113556.1.4.1413", "PERMISSIVE_MODIFY");
+    map.insert("1.2.840.113556.1.4.1504", "ASQ");
+    map.insert("1.2.840.113556.1.4.1670", "ACTIVE_DIRECTORY_V51");
+    map.insert("1.2.840.113556.1.4.1791", "ACTIVE_DIRECTORY_LDAP_INTEG");
+    map.insert("1.2.840.113556.1.4.1851", "ACTIVE_DIRECTORY_ADAM");
+    map.insert("1.2.840.113556.1.4.1852", "QUOTA_CONTROL");
+    map.insert("1.2.840.113556.1.4.1880", "ACTIVE_DIRECTORY_ADAM_DIGEST");
+    map.insert("1.2.840.113556.1.4.1907", "SHUTDOWN_NOTIFY");
+    map.insert("1.2.840.113556.1.4.1920", "ACTIVE_DIRECTORY_PARTIAL_SECRETS");
+    map.insert("1.2.840.113556.1.4.1935", "ACTIVE_DIRECTORY_V60");
+    map.insert("1.2.840.113556.1.4.1948", "RANGE_RETRIEVAL_NOERR");
+    map.insert("1.2.840.113556.1.4.1974", "FORCE_UPDATE");
+    map.insert("1.2.840.113556.1.4.2026", "DN_INPUT");
+    map.insert("1.2.840.113556.1.4.2064", "SHOW_RECYCLED");
+    map.insert("1.2.840.113556.1.4.2065", "SHOW_DEACTIVATED_LINK");
+    map.insert("1.2.840.113556.1.4.2066", "POLICY_HINTS_DEPRECATED");
+    map.insert("1.2.840.113556.1.4.2080", "ACTIVE_DIRECTORY_V61_R2");
+    map.insert("1.2.840.113556.1.4.2090", "DIRSYNC_EX");
+    map.insert("1.2.840.113556.1.4.2204", "TREE_DELETE_EX");
+    map.insert("1.2.840.113556.1.4.2205", "UPDATE_STATS");
+    map.insert("1.2.840.113556.1.4.2206", "SEARCH_HINTS");
+    map.insert("1.2.840.113556.1.4.2211", "EXPECTED_ENTRY_COUNT");
+    map.insert("1.2.840.113556.1.4.2237", "ACTIVE_DIRECTORY_W8");
+    map.insert("1.2.840.113556.1.4.2239", "POLICY_HINTS");
+    map.insert("1.2.840.113556.1.4.2255", "SET_OWNER");
+    map.insert("1.2.840.113556.1.4.2256", "BYPASS_QUOTA");
+    map.insert("1.2.840.113556.1.4.2309", "LINK_TTL");
+    map.insert("1.2.840.113556.1.4.2330", "SET_CORRELATION_ID");
+    map.insert("1.2.840.113556.1.4.2354", "THREAD_TRACE_OVERRIDE");
+    map.insert("2.16.840.1.113730.3.4.9", "VLVREQUEST");
+    map.insert("2.16.840.1.113730.3.4.10", "VLVRESPONSE");
+    map
+});
