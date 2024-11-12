@@ -12,7 +12,7 @@ use crate::values::bitmasks::{InstanceType, SystemFlags, UserAccountControl};
 use crate::values::enums::{FunctionalityLevel, SamAccountType};
 use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dns::DnsProperty;
-use crate::values::structs::replication::{ReplUpToDateVector2, RepsFromTo};
+use crate::values::structs::replication::{DsaSignatureState1, ReplUpToDateVector2, RepsFromTo};
 
 
 fn is_safe_ldap_string(string: &str) -> bool {
@@ -226,6 +226,9 @@ pub(crate) fn handle_special_binary_key(key: &str, bin_values: &[Vec<u8>]) -> bo
         true
     } else if key == "dNSProperty" {
         output_as_struct!(key, bin_values, DnsProperty);
+        true
+    } else if key == "dSASignature" {
+        output_as_struct!(key, bin_values, DsaSignatureState1);
         true
     } else {
         false

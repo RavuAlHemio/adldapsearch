@@ -320,6 +320,46 @@ impl DsaRpcInst {
     }
 }
 
+// MS KB2789917, lost to the sands of time
+#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct DsaSignatureState1 {
+    pub version: u32,
+    // cb_size: u32,
+    pub flags: u32,
+    pub padding0: u32,
+    pub backup_error_latency_secs: u64,
+    pub dsa_guid: Uuid,
+}
+impl DsaSignatureState1 {
+    pub fn try_from_bytes(bytes: &[u8]) -> Option<Self> {
+        let version = u32::from_le_bytes(bytes[0..4].try_into().unwrap());
+        if version != 1 {
+            return None;
+        }
+
+        let byte_count: usize = u32::from_le_bytes(bytes[4..8].try_into().unwrap()).try_into().unwrap();
+        if byte_count > bytes.len() {
+            return None;
+        }
+        if byte_count < 40 {
+            return None;
+        }
+
+        let flags = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
+        let padding0 = u32::from_le_bytes(bytes[12..16].try_into().unwrap());
+        let backup_error_latency_secs = u64::from_le_bytes(bytes[16..24].try_into().unwrap());
+        let dsa_guid = Uuid::from_slice_le(&bytes[24..40]).unwrap();
+
+        Some(Self {
+            version,
+            flags,
+            padding0,
+            backup_error_latency_secs,
+            dsa_guid,
+        })
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
