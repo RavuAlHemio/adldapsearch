@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use crate::values::bitmasks::{InstanceType, SystemFlags, UserAccountControl};
 use crate::values::enums::{FunctionalityLevel, SamAccountType};
+use crate::values::structs::dns::DnsProperty;
 use crate::values::structs::replication::{ReplUpToDateVector2, RepsFromTo};
 
 
@@ -206,6 +207,9 @@ pub(crate) fn handle_special_binary_key(key: &str, bin_values: &[Vec<u8>]) -> bo
         true
     } else if key == "repsFrom" || key == "repsTo" {
         output_as_struct!(key, bin_values, RepsFromTo);
+        true
+    } else if key == "dNSProperty" {
+        output_as_struct!(key, bin_values, DnsProperty);
         true
     } else {
         false
