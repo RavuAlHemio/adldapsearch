@@ -1,7 +1,9 @@
 use from_to_repr::FromToRepr;
+use serde::{Deserialize, Serialize};
 
 
-#[derive(Clone, Copy, Debug, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd)]
+// https://learn.microsoft.com/en-us/windows/win32/adschema/a-samaccounttype
+#[derive(Clone, Copy, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 #[repr(u32)]
 pub(crate) enum SamAccountType {
     DomainObject = 0x0,
@@ -15,4 +17,19 @@ pub(crate) enum SamAccountType {
     AppBasicGroup = 0x40000000,
     AppQueryGroup = 0x40000001,
     AccountTypeMax = 0x7fffffff,
+}
+
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/d49624d0-9320-4368-8b0c-a7998ac2abdb
+#[derive(Clone, Copy, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[repr(u32)]
+pub(crate) enum FunctionalityLevel {
+    Win2000 = 0,
+    Win2003Mixed = 1,
+    Win2003 = 2,
+    Win2008 = 3,
+    Win2008R2 = 4,
+    Win2012 = 5,
+    Win2012R2 = 6,
+    Win2016 = 7,
 }

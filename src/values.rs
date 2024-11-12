@@ -1,14 +1,15 @@
 pub(crate) mod bitmasks;
 pub(crate) mod enums;
+pub(crate) mod structs;
 
 
 use base64::prelude::{BASE64_STANDARD, Engine};
-use chrono::{Local, NaiveDate, TimeDelta};
+use chrono::{DateTime, Local, NaiveDate, TimeDelta, Utc};
 use uuid::Uuid;
 
-use crate::values::bitmasks::UserAccountControl;
-use crate::values::enums::SamAccountType;
-
+use crate::values::bitmasks::{InstanceType, SystemFlags, UserAccountControl};
+use crate::values::enums::{FunctionalityLevel, SamAccountType};
+use crate::values::structs::replication::{ReplUpToDateVector2, RepsFromTo};
 
 
 fn is_safe_ldap_string(string: &str) -> bool {
@@ -126,6 +127,7 @@ fn output_sid_value(key: &str, value: &[u8]) {
     println!();
 }
 
+
 macro_rules! output_as_enum_or_bitflags {
     ($key:expr, $values:expr, $int_type:ty, $enum:ty) => {
         for str_value in $values {
@@ -145,6 +147,21 @@ macro_rules! output_as_enum_or_bitflags {
     };
 }
 
+macro_rules! output_as_struct {
+    ($key:expr, $values:expr, $struct:ty) => {
+        for bin_value in $values {
+            if let Some(struct_val) = <$struct>::try_from_bytes(bin_value) {
+                let formatted = format!("{:#?}", struct_val);
+                println!("{}:::", $key);
+                for line in formatted.split("\n") {
+                    println!(" {}", line);
+                }
+            } else {
+                output_binary_value_as_hexdump($key, bin_value);
+            }
+        }
+    };
+}
 
 pub(crate) fn handle_special_key(key: &str, values: &[String]) -> bool {
     if key == "userAccountControl" {
@@ -153,7 +170,16 @@ pub(crate) fn handle_special_key(key: &str, values: &[String]) -> bool {
     } else if key == "sAMAccountType" {
         output_as_enum_or_bitflags!(key, values, u32, SamAccountType);
         true
-    } else if key == "accountExpires" || key == "lastLogon" || key == "lastLogonTimestamp" || key == "badPasswordTime" || key == "pwdLastSet" {
+    } else if key == "domainControllerFunctionality" || key == "domainFunctionality" || key == "forestFunctionality" || key == "msDS-Behavior-Version" {
+        output_as_enum_or_bitflags!(key, values, u32, FunctionalityLevel);
+        true
+    } else if key == "systemFlags" {
+        output_as_enum_or_bitflags!(key, values, i32, SystemFlags);
+        true
+    } else if key == "instanceType" {
+        output_as_enum_or_bitflags!(key, values, u32, InstanceType);
+        true
+    } else if key == "accountExpires" || key == "lastLogon" || key == "lastLogonTimestamp" || key == "badPasswordTime" || key == "pwdLastSet" || key == "creationTime" {
         for value in values {
             output_timestamp_value(key, value);
         }
@@ -174,6 +200,12 @@ pub(crate) fn handle_special_binary_key(key: &str, bin_values: &[Vec<u8>]) -> bo
         for value in bin_values {
             output_sid_value(key, value);
         }
+        true
+    } else if key == "replUpToDateVector" {
+        output_as_struct!(key, bin_values, ReplUpToDateVector2);
+        true
+    } else if key == "repsFrom" || key == "repsTo" {
+        output_as_struct!(key, bin_values, RepsFromTo);
         true
     } else {
         false
@@ -200,4 +232,32 @@ pub(crate) fn output_binary_values(key: &str, bin_values: &[Vec<u8>]) {
     for bin_value in bin_values {
         output_binary_value_as_hexdump(key, bin_value);
     }
+}
+
+pub(crate) fn utc_seconds_relative_to_1601(seconds: i64) -> DateTime<Utc> {
+    let windows_epoch = NaiveDate::from_ymd_opt(1601, 1, 1)
+        .unwrap()
+        .and_hms_opt(0, 0, 0).unwrap()
+        .and_utc();
+    let delta = TimeDelta::seconds(seconds);
+    windows_epoch + delta
+}
+
+pub(crate) fn nul_terminated_utf16le_string(bytes: &[u8]) -> Option<String> {
+    let mut words = Vec::with_capacity(bytes.len() / 2);
+    for chunk in bytes.chunks(2) {
+        let word = u16::from_le_bytes(chunk.try_into().unwrap());
+        if word == 0 {
+            break;
+        }
+        words.push(word);
+    }
+    String::from_utf16(&words).ok()
+}
+
+pub(crate) fn nul_terminated_utf16le_string_at_offset(bytes: &[u8], offset: usize, zero_offset_is_null: bool) -> Option<String> {
+    if zero_offset_is_null && offset == 0 {
+        return None;
+    }
+    nul_terminated_utf16le_string(&bytes[offset..])
 }
