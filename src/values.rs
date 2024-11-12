@@ -80,6 +80,29 @@ fn output_timestamp_value(key: &str, value: &str) {
 }
 
 
+fn output_negative_interval_value(key: &str, value: &str) {
+    let parsed = match i64::from_str_radix(value, 10) {
+        Ok(p) => p,
+        Err(_) => {
+            output_string_value_as_string(key, value);
+            return;
+        },
+    };
+    let positive = -parsed;
+    let microseconds = TimeDelta::microseconds(positive / 10);
+    let remaining_nanoseconds = TimeDelta::nanoseconds((positive % 10) * 100);
+    let delta = microseconds + remaining_nanoseconds;
+    let rest = delta.num_seconds();
+
+    let (seconds, rest) = (rest % 60, rest / 60);
+    let (minutes, rest) = (rest % 60, rest / 60);
+    let (hours, rest) = (rest % 24, rest / 24);
+    let days = rest;
+
+    println!("{}: {} ({}d {}h {}min {}s)", key, value, days, hours, minutes, seconds);
+}
+
+
 fn output_guid_value(key: &str, value: &[u8]) {
     let bytes: [u8; 16] = match value.try_into() {
         Ok(bs) => bs,
@@ -199,6 +222,11 @@ pub(crate) fn handle_special_key(key: &str, values: &[String]) -> bool {
     } else if key == "supportedCapabilities" || key == "supportedControl" {
         for value in values {
             output_oid(key, value);
+        }
+        true
+    } else if key == "lockoutDuration" || key == "lockOutObservationWindow" {
+        for value in values {
+            output_negative_interval_value(key, value);
         }
         true
     } else {
