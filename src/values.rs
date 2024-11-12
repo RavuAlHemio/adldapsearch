@@ -88,6 +88,11 @@ fn output_negative_interval_value(key: &str, value: &str) {
             return;
         },
     };
+    if parsed == i64::MIN {
+        println!("{}: {} (never)", key, value);
+        return;
+    }
+
     let positive = -parsed;
     let microseconds = TimeDelta::microseconds(positive / 10);
     let remaining_nanoseconds = TimeDelta::nanoseconds((positive % 10) * 100);
@@ -224,7 +229,7 @@ pub(crate) fn handle_special_key(key: &str, values: &[String]) -> bool {
             output_oid(key, value);
         }
         true
-    } else if key == "lockoutDuration" || key == "lockOutObservationWindow" {
+    } else if key == "lockoutDuration" || key == "lockOutObservationWindow" || key == "maxPwdAge" || key == "minPwdAge" {
         for value in values {
             output_negative_interval_value(key, value);
         }
