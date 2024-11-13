@@ -22,6 +22,9 @@ pub(crate) struct Opts {
     #[arg(short = 's', long)]
     pub scope: LdapScope,
 
+    #[arg(long)]
+    pub avoid_sacl: bool,
+
     pub filter: Option<String>,
 
     pub attributes: Vec<String>,

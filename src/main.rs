@@ -87,6 +87,28 @@ async fn run() {
         None => Cow::Owned(find_base_dn(&mut ldap).await),
     };
 
+    if o.avoid_sacl {
+        const LDAP_SERVER_SD_FLAGS_OID: &str = "1.2.840.113556.1.4.801";
+        // payload is a BER-encoded SEQUENCE { INTEGER }
+        // where the INTEGER is a combination of these bitflags:
+        // 0x1 = owner, 0x2 = group, 0x4 = DACL, 0x8 = SACL
+        // with an unprivileged user, we can generally read owner, group and DACL and not SACL
+        // (if we try, the relevant attribute simply isn't returned)
+        const PAYLOAD: [u8; 5] = [
+            0x30, // ASN.1 SEQUENCE
+            0x03, // 3 bytes long
+                0x02, // ASN.1 INTEGER
+                0x01, // 1 byte long
+                0x07, // owner | group | DACL
+        ];
+        let avoid_sacl_control = ldap3::controls::RawControl {
+            ctype: LDAP_SERVER_SD_FLAGS_OID.to_owned(),
+            crit: false,
+            val: Some(PAYLOAD.to_vec()),
+        };
+        ldap.with_controls(avoid_sacl_control);
+    }
+
     let (results, _response) = ldap.search(
         &base_dn,
         o.scope.into(),
