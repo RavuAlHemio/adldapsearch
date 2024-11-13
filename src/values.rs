@@ -13,6 +13,7 @@ use crate::values::enums::{FunctionalityLevel, SamAccountType};
 use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dns::DnsProperty;
 use crate::values::structs::replication::{DsaSignatureState1, ReplUpToDateVector2, RepsFromTo};
+use crate::values::structs::security::SecurityDescriptor;
 
 
 fn is_safe_ldap_string(string: &str) -> bool {
@@ -262,6 +263,19 @@ pub(crate) fn handle_special_binary_key(key: &str, bin_values: &[Vec<u8>]) -> bo
         true
     } else if key == "dSASignature" {
         output_as_struct!(key, bin_values, DsaSignatureState1);
+        true
+    } else if key == "nTSecurityDescriptor" || key == "msExchMailboxSecurityDescriptor" {
+        for bin_value in bin_values {
+            if let Some(sd) = SecurityDescriptor::try_from_bytes(bin_value) {
+                if let Some(sd_string) = sd.try_to_string() {
+                    println!("{}: {}", key, sd_string);
+                } else {
+                    output_binary_value_as_hexdump(key, bin_value);
+                }
+            } else {
+                output_binary_value_as_hexdump(key, bin_value);
+            }
+        }
         true
     } else {
         false
