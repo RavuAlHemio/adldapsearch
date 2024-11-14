@@ -167,7 +167,7 @@ pub struct Ipv6AddrData {
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct NextDomainData {
-    pub record_types: Vec<u16>,
+    pub record_type_mask_bytes: [u8; 16],
     pub next_name: String,
 }
 
@@ -328,6 +328,51 @@ impl Data {
         Some((string, 1 + string_length))
     }
 
+    fn decode_count_name(bytes: &[u8]) -> Option<(String, usize)> {
+        // total_length: u8,
+        // label_count: u8,
+        // labels: [Label; label_count]
+        // where Label:
+        //   label_length: u8,
+        //   label: [u8; label_length]
+        if bytes.len() < 2 {
+            return None;
+        }
+        let string_length_including_nul: usize = bytes[0].into();
+        let label_count: usize = bytes[1].into();
+        if 2 + string_length_including_nul > bytes.len() {
+            return None;
+        }
+        let label_slice = &bytes[2..2+string_length_including_nul];
+        let mut position = 0;
+        let mut ret = String::with_capacity(string_length_including_nul);
+        for _ in 0..label_count {
+            if position >= label_slice.len() {
+                return None;
+            }
+            let label_length: usize = label_slice[position].into();
+            position += 1;
+            if position + label_length > label_slice.len() {
+                return None;
+            }
+            let label_bytes = &label_slice[position..position+label_length];
+            position += label_length;
+            let label_string = std::str::from_utf8(label_bytes).ok()?;
+            ret.push_str(&label_string);
+            ret.push('.');
+        }
+        if label_slice[position] != 0x00 {
+            // not NUL-terminated
+            return None;
+        }
+        position += 1;
+        if position != label_slice.len() {
+            // trailing data?!
+            return None;
+        }
+        Some((ret, 2 + string_length_including_nul))
+    }
+
     pub fn try_from_bytes(kind: u16, bytes: &[u8]) -> Option<Self> {
         let data = match kind {
             0x00 => {
@@ -351,7 +396,7 @@ impl Data {
                 })
             },
             0x02|0x03|0x04|0x05|0x07|0x08|0x09|0x0C|0x27 => {
-                let (name, length_taken) = Self::decode_string(bytes)?;
+                let (name, length_taken) = Self::decode_count_name(bytes)?;
                 if length_taken != bytes.len() {
                     // trailing data? overshot?
                     return None;
@@ -383,9 +428,9 @@ impl Data {
                 let minimum_ttl = u32::from_le_bytes(bytes[16..20].try_into().unwrap());
 
                 let mut position = 20;
-                let (primary_server_name, psn_consumed) = Self::decode_string(&bytes[position..])?;
-                position += psn_consumed;
-                let (zone_admin_email, zae_consumed) = Self::decode_string(&bytes[position..])?;
+                let (primary_server_name, psn_consumed) = Self::decode_count_name(&bytes[position..])?;
+                position += psn_consumed; 
+                let (zone_admin_email, zae_consumed) = Self::decode_count_name(&bytes[position..])?;
                 position += zae_consumed;
                 if position != bytes.len() {
                     // trailing data? overshot?
@@ -449,9 +494,9 @@ impl Data {
                     return None;
                 }
                 let mut position = 0;
-                let (mailbox, mailbox_consumed) = Self::decode_string(&bytes[position..])?;
+                let (mailbox, mailbox_consumed) = Self::decode_count_name(&bytes[position..])?;
                 position += mailbox_consumed;
-                let (error_mailbox, em_consumed) = Self::decode_string(&bytes[position..])?;
+                let (error_mailbox, em_consumed) = Self::decode_count_name(&bytes[position..])?;
                 position += em_consumed;
                 if position != bytes.len() {
                     // trailing data? overshot?
@@ -471,9 +516,9 @@ impl Data {
                 if bytes.len() < 3 {
                     return None;
                 }
-                let preference = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
+                let preference = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
                 let mut position = 2;
-                let (name, name_consumed) = Self::decode_string(&bytes[position..])?;
+                let (name, name_consumed) = Self::decode_count_name(&bytes[position..])?;
                 position += name_consumed;
                 if position != bytes.len() {
                     // trailing data? overshot?
@@ -494,15 +539,15 @@ impl Data {
                 if bytes.len() < 19 {
                     return None;
                 }
-                let type_covered = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
+                let type_covered = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
                 let algorithm = bytes[2];
                 let label_count = bytes[3];
-                let original_ttl = u32::from_le_bytes(bytes[4..8].try_into().unwrap());
-                let signature_expiration = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
-                let signature_inception = u32::from_le_bytes(bytes[12..16].try_into().unwrap());
-                let key_tag = u16::from_le_bytes(bytes[16..18].try_into().unwrap());
+                let original_ttl = u32::from_be_bytes(bytes[4..8].try_into().unwrap());
+                let signature_expiration = u32::from_be_bytes(bytes[8..12].try_into().unwrap());
+                let signature_inception = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
+                let key_tag = u16::from_be_bytes(bytes[16..18].try_into().unwrap());
                 let mut position = 18;
-                let (signer, signer_consumed) = Self::decode_string(&bytes[position..])?;
+                let (signer, signer_consumed) = Self::decode_count_name(&bytes[position..])?;
                 position += signer_consumed;
                 let signature = bytes[position..].to_vec();
                 let data = SignatureData {
@@ -526,7 +571,7 @@ impl Data {
                 if bytes.len() < 4 {
                     return None;
                 }
-                let flags = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
+                let flags = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
                 let protocol = bytes[2];
                 let algorithm = bytes[3];
                 let key = bytes[4..].to_vec();
@@ -553,28 +598,19 @@ impl Data {
                 })
             },
             0x1E => {
-                if bytes.len() < 3 {
+                if bytes.len() < 16 {
                     return None;
                 }
-                let record_type_count: usize = u16::from_le_bytes(bytes[0..2].try_into().unwrap()).into();
-                let mut record_types = Vec::with_capacity(record_type_count);
-                let mut position = 2;
-                for _ in 0..record_type_count {
-                    if position + 2 > bytes.len() {
-                        return None;
-                    }
-                    let type_word = u16::from_le_bytes(bytes[position..position+2].try_into().unwrap());
-                    position += 2;
-                    record_types.push(type_word);
-                }
-                let (next_name, nn_consumed) = Self::decode_string(&bytes[position..])?;
+                let record_type_mask_bytes = bytes[0..16].try_into().unwrap();
+                let mut position = 16;
+                let (next_name, nn_consumed) = Self::decode_count_name(&bytes[position..])?;
                 position += nn_consumed;
                 if position != bytes.len() {
                     // trailing data? overshot?
                     return None;
                 }
                 Self::LegacyNextDomain(NextDomainData {
-                    record_types,
+                    record_type_mask_bytes,
                     next_name,
                 })
             },
@@ -582,11 +618,11 @@ impl Data {
                 if bytes.len() < 7 {
                     return None;
                 }
-                let priority = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
-                let weight = u16::from_le_bytes(bytes[2..4].try_into().unwrap());
-                let port = u16::from_le_bytes(bytes[4..6].try_into().unwrap());
+                let priority = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
+                let weight = u16::from_be_bytes(bytes[2..4].try_into().unwrap());
+                let port = u16::from_be_bytes(bytes[4..6].try_into().unwrap());
                 let mut position = 6;
-                let (target, target_consumed) = Self::decode_string(&bytes[position..])?;
+                let (target, target_consumed) = Self::decode_count_name(&bytes[position..])?;
                 position += target_consumed;
                 if position != bytes.len() {
                     // trailing data? overshot?
@@ -623,7 +659,7 @@ impl Data {
                 position += service_consumed;
                 let (substitution, sub_consumed) = Self::decode_string(&bytes[position..])?;
                 position += sub_consumed;
-                let (replacement, repl_consumed) = Self::decode_string(&bytes[position..])?;
+                let (replacement, repl_consumed) = Self::decode_count_name(&bytes[position..])?;
                 position += repl_consumed;
                 if position != bytes.len() {
                     // trailing data? overshot?
@@ -642,7 +678,7 @@ impl Data {
                 if bytes.len() < 4 {
                     return None;
                 }
-                let key_tag = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
+                let key_tag = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
                 let algorithm = bytes[2];
                 let digest_type = bytes[3];
                 let digest = bytes[4..].to_vec();
@@ -654,7 +690,7 @@ impl Data {
                 })
             },
             0x2F => {
-                let (signer, signer_consumed) = Self::decode_string(bytes)?;
+                let (signer, signer_consumed) = Self::decode_count_name(bytes)?;
                 let nsec_bitmap = bytes[signer_consumed..].to_vec();
                 Self::NextSecureRecord(NextSecureRecordData {
                     signer,
@@ -667,7 +703,7 @@ impl Data {
                 }
                 let algorithm = bytes[0];
                 let flags = bytes[1];
-                let iterations = u16::from_le_bytes(bytes[2..4].try_into().unwrap());
+                let iterations = u16::from_be_bytes(bytes[2..4].try_into().unwrap());
                 let salt_length: usize = bytes[4].into();
                 let hash_length: usize = bytes[5].into();
                 let mut position = 6;
@@ -697,7 +733,7 @@ impl Data {
                 }
                 let algorithm = bytes[0];
                 let flags = bytes[1];
-                let iterations = u16::from_le_bytes(bytes[2..4].try_into().unwrap());
+                let iterations = u16::from_be_bytes(bytes[2..4].try_into().unwrap());
                 let salt_length: usize = bytes[4].into();
                 let mut position = 5;
                 if position + salt_length > bytes.len() {
