@@ -230,7 +230,7 @@ pub(crate) fn handle_special_key(key: &str, values: &[String]) -> bool {
             output_oid(key, value);
         }
         true
-    } else if key == "lockoutDuration" || key == "lockOutObservationWindow" || key == "maxPwdAge" || key == "minPwdAge" {
+    } else if key == "lockoutDuration" || key == "lockOutObservationWindow" || key == "maxPwdAge" || key == "minPwdAge" || key == "forceLogoff" {
         for value in values {
             output_negative_interval_value(key, value);
         }
