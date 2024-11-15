@@ -70,7 +70,15 @@ impl DnsRecord {
         let ttl_seconds = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
         let timestamp = u32::from_le_bytes(bytes[16..20].try_into().unwrap());
         let reserved = u32::from_le_bytes(bytes[20..24].try_into().unwrap());
-        let data = Data::try_from_bytes(kind, &bytes[24..])?;
+        let data = if flags.contains(Flags::RecordWireFormat) {
+            // custom record type, possibly not supported by MS DNS
+            Data::Other(OtherRecordData {
+                record_type: kind,
+                data: bytes[24..].to_vec(),
+            })
+        } else {
+            Data::try_from_bytes(kind, &bytes[24..])?
+        };
         Some(Self {
             rank,
             flags,
