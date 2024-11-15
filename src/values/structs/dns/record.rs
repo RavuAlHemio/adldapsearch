@@ -67,7 +67,7 @@ impl DnsRecord {
         let rank: Rank = u16::from_le_bytes(bytes[4..6].try_into().unwrap()).into();
         let flags: Flags = u16::from_le_bytes(bytes[6..8].try_into().unwrap()).into();
         let serial = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
-        let ttl_seconds = u32::from_le_bytes(bytes[12..16].try_into().unwrap());
+        let ttl_seconds = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
         let timestamp = u32::from_le_bytes(bytes[16..20].try_into().unwrap());
         let reserved = u32::from_le_bytes(bytes[20..24].try_into().unwrap());
         let data = Data::try_from_bytes(kind, &bytes[24..])?;
@@ -650,8 +650,8 @@ impl Data {
                 if bytes.len() < 8 {
                     return None;
                 }
-                let order = u16::from_le_bytes(bytes[0..2].try_into().unwrap());
-                let preference = u16::from_le_bytes(bytes[2..4].try_into().unwrap());
+                let order = u16::from_be_bytes(bytes[0..2].try_into().unwrap());
+                let preference = u16::from_be_bytes(bytes[2..4].try_into().unwrap());
                 let mut position = 4;
                 let (flags, flags_consumed) = Self::decode_string(&bytes[position..])?;
                 position += flags_consumed;
