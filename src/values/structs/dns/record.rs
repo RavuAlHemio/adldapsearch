@@ -10,7 +10,7 @@ use crate::values::utc_ticks_relative_to_1601;
 
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-#[from_to_other(base_type = u16, derive_compare = "as_int")]
+#[from_to_other(base_type = u8, derive_compare = "as_int")]
 pub enum Rank {
     CacheBit = 0b0000_0001,
     RootHint = 0b0000_1000,
@@ -24,7 +24,7 @@ pub enum Rank {
     NsGlue = 0b1000_0010,
     CacheAAnswer = 0b1100_0001,
     Zone = 0b1111_0000,
-    Other(u16),
+    Other(u8),
 }
 
 
@@ -40,12 +40,13 @@ pub enum Flags {
 }
 
 
-// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dnsp/ac793981-1c60-43b8-be59-cdbb5c4ecb8a
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dnsp/6912b338-5472-4f59-b912-0edb536b6ed8
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct DnsRecord {
     // length: u16,
     // type: u16,
-    pub rank: Rank, // u16
+    pub version: u8,
+    pub rank: Rank, // u8
     pub flags: Flags, // u16
     pub serial: u32,
     pub ttl_seconds: u32,
@@ -64,7 +65,8 @@ impl DnsRecord {
             return None;
         }
         let kind = u16::from_le_bytes(bytes[2..4].try_into().unwrap()).into();
-        let rank: Rank = u16::from_le_bytes(bytes[4..6].try_into().unwrap()).into();
+        let version = bytes[4];
+        let rank: Rank = bytes[5].into();
         let flags: Flags = u16::from_le_bytes(bytes[6..8].try_into().unwrap()).into();
         let serial = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
         let ttl_seconds = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
@@ -80,6 +82,7 @@ impl DnsRecord {
             Data::try_from_bytes(kind, &bytes[24..])?
         };
         Some(Self {
+            version,
             rank,
             flags,
             serial,
