@@ -17,6 +17,13 @@ use crate::values::structs::replication::{DsaSignatureState1, ReplUpToDateVector
 use crate::values::structs::security::SecurityDescriptor;
 
 
+#[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum LdapValue {
+    String(String),
+    Binary(Vec<u8>),
+}
+
+
 fn is_safe_ldap_string(string: &str) -> bool {
     let first_char = match string.chars().nth(0) {
         Some(fc) => fc,
@@ -171,70 +178,60 @@ fn output_oid(key: &str, str_value: &str) {
 
 
 macro_rules! output_as_enum_or_bitflags {
-    ($key:expr, $values:expr, $int_type:ty, $enum:ty) => {
-        for str_value in $values {
-            if let Ok(int_val) = <$int_type>::from_str_radix(&str_value, 10) {
-                #[allow(irrefutable_let_patterns)]
-                if int_val == 0 {
-                    println!("{}: {}", $key, int_val);
-                } else if let Ok(enum_val) = <$enum>::try_from(int_val) {
-                    println!("{}: {} ({:?})", $key, int_val, enum_val);
-                } else {
-                    output_string_value_as_string($key, str_value);
-                }
+    ($key:expr, $value:expr, $int_type:ty, $enum:ty) => {
+        if let Ok(int_val) = <$int_type>::from_str_radix($value, 10) {
+            #[allow(irrefutable_let_patterns)]
+            if int_val == 0 {
+                println!("{}: {}", $key, int_val);
+            } else if let Ok(enum_val) = <$enum>::try_from(int_val) {
+                println!("{}: {} ({:?})", $key, int_val, enum_val);
             } else {
-                output_string_value_as_string($key, str_value);
+                output_string_value_as_string($key, $value);
             }
+        } else {
+            output_string_value_as_string($key, $value);
         }
     };
 }
 
 macro_rules! output_as_struct {
-    ($key:expr, $values:expr, $struct:ty) => {
-        for bin_value in $values {
-            if let Some(struct_val) = <$struct>::try_from_bytes(bin_value) {
-                let formatted = format!("{:#?}", struct_val);
-                println!("{}:::", $key);
-                for line in formatted.split("\n") {
-                    println!(" {}", line);
-                }
-            } else {
-                output_binary_value_as_hexdump($key, bin_value);
+    ($key:expr, $value:expr, $struct:ty) => {
+        if let Some(struct_val) = <$struct>::try_from_bytes($value) {
+            let formatted = format!("{:#?}", struct_val);
+            println!("{}:::", $key);
+            for line in formatted.split("\n") {
+                println!(" {}", line);
             }
+        } else {
+            output_binary_value_as_hexdump($key, $value);
         }
     };
 }
 
-pub(crate) fn handle_special_key(key: &str, values: &[String]) -> bool {
+pub(crate) fn output_special_string_value(key: &str, value: &str) -> bool {
     if key == "userAccountControl" {
-        output_as_enum_or_bitflags!(key, values, u32, UserAccountControl);
+        output_as_enum_or_bitflags!(key, value, u32, UserAccountControl);
         true
     } else if key == "sAMAccountType" {
-        output_as_enum_or_bitflags!(key, values, u32, SamAccountType);
+        output_as_enum_or_bitflags!(key, value, u32, SamAccountType);
         true
     } else if key == "domainControllerFunctionality" || key == "domainFunctionality" || key == "forestFunctionality" || key == "msDS-Behavior-Version" {
-        output_as_enum_or_bitflags!(key, values, u32, FunctionalityLevel);
+        output_as_enum_or_bitflags!(key, value, u32, FunctionalityLevel);
         true
     } else if key == "systemFlags" {
-        output_as_enum_or_bitflags!(key, values, i32, SystemFlags);
+        output_as_enum_or_bitflags!(key, value, i32, SystemFlags);
         true
     } else if key == "instanceType" {
-        output_as_enum_or_bitflags!(key, values, u32, InstanceType);
+        output_as_enum_or_bitflags!(key, value, u32, InstanceType);
         true
     } else if key == "accountExpires" || key == "lastLogon" || key == "lastLogonTimestamp" || key == "badPasswordTime" || key == "pwdLastSet" || key == "creationTime" {
-        for value in values {
-            output_timestamp_value(key, value);
-        }
+        output_timestamp_value(key, value);
         true
     } else if key == "supportedCapabilities" || key == "supportedControl" {
-        for value in values {
-            output_oid(key, value);
-        }
+        output_oid(key, value);
         true
     } else if key == "lockoutDuration" || key == "lockOutObservationWindow" || key == "maxPwdAge" || key == "minPwdAge" || key == "forceLogoff" {
-        for value in values {
-            output_negative_interval_value(key, value);
-        }
+        output_negative_interval_value(key, value);
         true
     } else {
         false
@@ -242,43 +239,37 @@ pub(crate) fn handle_special_key(key: &str, values: &[String]) -> bool {
 }
 
 
-pub(crate) fn handle_special_binary_key(key: &str, bin_values: &[Vec<u8>]) -> bool {
+pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
     if key == "objectGUID" || key == "mS-DS-ConsistencyGuid" || key == "msExchMailboxGuid" {
-        for value in bin_values {
-            output_guid_value(key, value);
-        }
+        output_guid_value(key, value);
         true
     } else if key == "objectSid" {
-        for value in bin_values {
-            output_sid_value(key, value);
-        }
+        output_sid_value(key, value);
         true
     } else if key == "replUpToDateVector" {
-        output_as_struct!(key, bin_values, ReplUpToDateVector2);
+        output_as_struct!(key, value, ReplUpToDateVector2);
         true
     } else if key == "repsFrom" || key == "repsTo" {
-        output_as_struct!(key, bin_values, RepsFromTo);
+        output_as_struct!(key, value, RepsFromTo);
         true
     } else if key == "dNSProperty" {
-        output_as_struct!(key, bin_values, DnsProperty);
+        output_as_struct!(key, value, DnsProperty);
         true
     } else if key == "dnsRecord" {
-        output_as_struct!(key, bin_values, DnsRecord);
+        output_as_struct!(key, value, DnsRecord);
         true
     } else if key == "dSASignature" {
-        output_as_struct!(key, bin_values, DsaSignatureState1);
+        output_as_struct!(key, value, DsaSignatureState1);
         true
     } else if key == "nTSecurityDescriptor" || key == "msExchMailboxSecurityDescriptor" {
-        for bin_value in bin_values {
-            if let Some(sd) = SecurityDescriptor::try_from_bytes(bin_value) {
-                if let Some(sd_string) = sd.try_to_string() {
-                    println!("{}: {}", key, sd_string);
-                } else {
-                    output_binary_value_as_hexdump(key, bin_value);
-                }
+        if let Some(sd) = SecurityDescriptor::try_from_bytes(value) {
+            if let Some(sd_string) = sd.try_to_string() {
+                println!("{}: {}", key, sd_string);
             } else {
-                output_binary_value_as_hexdump(key, bin_value);
+                output_binary_value_as_hexdump(key, value);
             }
+        } else {
+            output_binary_value_as_hexdump(key, value);
         }
         true
     } else {
@@ -287,26 +278,23 @@ pub(crate) fn handle_special_binary_key(key: &str, bin_values: &[Vec<u8>]) -> bo
 }
 
 
-pub(crate) fn output_string_values(key: &str, values: &[String]) {
-    if handle_special_key(key, values) {
-        return;
-    }
-
-    for str_value in values {
-        output_string_value_as_string(key, str_value);
-    }
-}
-
-
-pub(crate) fn output_binary_values(key: &str, bin_values: &[Vec<u8>]) {
-    if handle_special_binary_key(key, bin_values) {
-        return;
-    }
-
-    for bin_value in bin_values {
-        output_binary_value_as_hexdump(key, bin_value);
+pub(crate) fn output_values(key: &str, values: &[LdapValue]) {
+    for value in values {
+        match value {
+            LdapValue::Binary(bin_value) => {
+                if !output_special_binary_value(key, bin_value) {
+                    output_binary_value_as_hexdump(key, bin_value);
+                }
+            },
+            LdapValue::String(str_value) => {
+                if !output_special_string_value(key, str_value) {
+                    output_string_value_as_string(key, str_value);
+                }
+            },
+        }
     }
 }
+
 
 pub(crate) fn utc_seconds_relative_to_1601(seconds: i64) -> DateTime<Utc> {
     let windows_epoch = NaiveDate::from_ymd_opt(1601, 1, 1)

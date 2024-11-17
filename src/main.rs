@@ -3,13 +3,14 @@ mod values;
 
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 
 use clap::Parser;
 use ldap3::{Ldap, LdapConnAsync, Scope, SearchEntry};
 use rpassword;
 
 use crate::opts::{Credentials, Opts};
-use crate::values::{output_binary_values, output_string_values};
+use crate::values::{LdapValue, output_values};
 
 
 const DEFAULT_FILTER: &str = "(objectClass=*)";
@@ -122,18 +123,26 @@ async fn run() {
         println!();
         println!("dn: {}", entry.dn);
 
-        let mut str_keys: Vec<&String> = entry.attrs.keys().collect();
-        str_keys.sort_unstable();
-        for key in str_keys {
-            let str_values = entry.attrs.get(key).unwrap();
-            output_string_values(key, str_values);
+        let mut all_keys_values: BTreeMap<String, Vec<LdapValue>> = BTreeMap::new();
+        for (str_key, str_values) in entry.attrs {
+            let values = all_keys_values
+                .entry(str_key)
+                .or_insert_with(|| Vec::with_capacity(str_values.len()));
+            for str_value in str_values {
+                values.push(LdapValue::String(str_value));
+            }
+        }
+        for (bin_key, bin_values) in entry.bin_attrs {
+            let values = all_keys_values
+                .entry(bin_key)
+                .or_insert_with(|| Vec::with_capacity(bin_values.len()));
+            for bin_value in bin_values {
+                values.push(LdapValue::Binary(bin_value));
+            }
         }
 
-        let mut bin_keys: Vec<&String> = entry.bin_attrs.keys().collect();
-        bin_keys.sort_unstable();
-        for key in bin_keys {
-            let bin_values = entry.bin_attrs.get(key).unwrap();
-            output_binary_values(key, bin_values);
+        for (key, values) in all_keys_values {
+            output_values(&key, &values);
         }
     }
 }
