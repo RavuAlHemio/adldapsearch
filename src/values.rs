@@ -181,6 +181,52 @@ fn output_oid(key: &str, str_value: &str) {
 }
 
 
+fn output_utf16_string_with_bom(key: &str, bin_value: &[u8]) {
+    if bin_value.len() % 2 != 0 {
+        // invalid UTF-16
+        output_binary_value_as_hexdump(key, bin_value);
+        return;
+    }
+    if bin_value.len() < 2 {
+        // missing BOM
+        output_binary_value_as_hexdump(key, bin_value);
+        return;
+    }
+
+    let bom = u16::from_le_bytes(bin_value[0..2].try_into().unwrap());
+    let little_endian = match bom {
+        0xFEFF => true,
+        0xFFFE => false,
+        _ => {
+            // invalid BOM
+            output_binary_value_as_hexdump(key, bin_value);
+            return;
+        },
+    };
+
+    let mut words = Vec::with_capacity(bin_value.len() / 2);
+    // skip the BOM
+    for chunk in bin_value.chunks(2).skip(1) {
+        let word = if little_endian {
+            u16::from_le_bytes(chunk.try_into().unwrap())
+        } else {
+            u16::from_be_bytes(chunk.try_into().unwrap())
+        };
+        words.push(word);
+    }
+    let Ok(mut string) = String::from_utf16(&words) else {
+        // invalid UTF-16
+        output_binary_value_as_hexdump(key, bin_value);
+        return;
+    };
+    string = string.replace("\r\n", "\n").replace("\r", "\n");
+    println!("{}:::", key);
+    for line in string.split("\n") {
+        println!(" {}", line);
+    }
+}
+
+
 macro_rules! output_as_enum_or_bitflags {
     ($key:expr, $value:expr, $int_type:ty, $enum:ty) => {
         if let Ok(int_val) = <$int_type>::from_str_radix($value, 10) {
@@ -256,10 +302,10 @@ pub(crate) fn output_special_string_value(key: &str, value: &str) -> bool {
 
 
 pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
-    if key == "objectGUID" || key == "mS-DS-ConsistencyGuid" || key == "msExchMailboxGuid" {
+    if key == "objectGUID" || key == "mS-DS-ConsistencyGuid" || key == "msExchMailboxGuid" || key == "msDFS-GenerationGUIDv2" || key == "msDFS-NamespaceIdentityGUIDv2" {
         output_guid_value(key, value);
         true
-    } else if key == "objectSid" || key == "securityIdentifier" {
+    } else if key == "objectSid" || key == "securityIdentifier" || key == "msExchMasterAccountSid" {
         output_sid_value(key, value);
         true
     } else if key == "replUpToDateVector" {
@@ -290,6 +336,9 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
         } else {
             output_binary_value_as_hexdump(key, value);
         }
+        true
+    } else if key == "msDFS-TargetListv2" {
+        output_utf16_string_with_bom(key, value);
         true
     } else {
         false
