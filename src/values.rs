@@ -17,7 +17,7 @@ use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
 use crate::values::structs::replication::{DsaSignatureState1, ReplUpToDateVector2, RepsFromTo};
-use crate::values::structs::security::SecurityDescriptor;
+use crate::values::structs::security::{logon_hours_to_string, SecurityDescriptor};
 use crate::values::structs::trust::TrustForestTrustInfo;
 
 
@@ -339,6 +339,17 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
         true
     } else if key == "msDFS-TargetListv2" {
         output_utf16_string_with_bom(key, value);
+        true
+    } else if key == "logonHours" {
+        if let Some(mut lhts) = logon_hours_to_string(value) {
+            lhts = lhts.replace("\r\n", "\n").replace("\r", "\n");
+            println!("{}:::", key);
+            for line in lhts.split("\n") {
+                println!(" {}", line);
+            }
+        } else {
+            output_binary_value_as_hexdump(key, value);
+        }
         true
     } else {
         false

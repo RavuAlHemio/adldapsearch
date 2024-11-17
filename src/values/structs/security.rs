@@ -1139,3 +1139,44 @@ impl SecurityDescriptor {
         Some(ret)
     }
 }
+
+pub fn logon_hours_to_string(logon_hours: &[u8]) -> Option<String> {
+    if logon_hours.len() != 21 {
+        return None;
+    }
+
+    let mut ret = concat!(
+        "  |          11111111112222\n",
+        "  |012345678901234567890123\n",
+        "  +------------------------\n",
+    ).to_owned();
+    for (i, chunk) in logon_hours.chunks(3).enumerate() {
+        let weekday = match i {
+            0 => "Su",
+            1 => "Mo",
+            2 => "Tu",
+            3 => "We",
+            4 => "Th",
+            5 => "Fr",
+            6 => "Sa",
+            _ => "  ",
+        };
+        ret.push_str(weekday);
+        ret.push('|');
+
+        let bits: u32 =
+            (u32::from(chunk[0]) << 16)
+            | (u32::from(chunk[1]) <<  8)
+            | (u32::from(chunk[2]) <<  0)
+        ;
+        for h in (0..24).rev() {
+            if bits & (1 << h) != 0 {
+                ret.push('#');
+            } else {
+                ret.push(' ');
+            }
+        }
+        ret.push('\n');
+    }
+    Some(ret)
+}
