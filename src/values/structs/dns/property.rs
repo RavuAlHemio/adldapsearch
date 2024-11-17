@@ -15,6 +15,7 @@ pub(crate) struct DnsProperty {
     pub name_length: u32,
     pub flag: u32,
     pub version: u32,
+    pub is_default: bool,
     pub data: DnsPropertyData,
 }
 impl DnsProperty {
@@ -40,6 +41,7 @@ impl DnsProperty {
             return None;
         }
         let data_bytes = &bytes[20..20+data_length_usize];
+        let is_default = data_length_usize == 0;
 
         fn parse_ip4_array(bytes: &[u8]) -> Option<Vec<Ipv4Addr>> {
             if bytes.len() < 4 || bytes.len() % 4 != 0 {
@@ -88,52 +90,77 @@ impl DnsProperty {
 
         let data = match id {
             0x00000001 => {
-                if data_bytes.len() != 4 {
+                if is_default {
+                    DnsPropertyData::ZoneType(ZoneType::Primary)
+                } else if data_bytes.len() != 4 {
                     return None;
+                } else {
+                    DnsPropertyData::ZoneType(ZoneType::from_base_type(u32::from_le_bytes(data_bytes.try_into().unwrap())))
                 }
-                DnsPropertyData::ZoneType(ZoneType::from_base_type(u32::from_le_bytes(data_bytes.try_into().unwrap())))
             },
             0x00000002 => {
-                if data_bytes.len() != 4 {
+                if data_bytes.len() == 1 {
+                    DnsPropertyData::AllowUpdate(AllowUpdate::from_base_type(u32::from(data_bytes[0])))
+                } else if data_bytes.len() != 4 {
                     return None;
+                } else {
+                    DnsPropertyData::AllowUpdate(AllowUpdate::from_base_type(u32::from_le_bytes(data_bytes.try_into().unwrap())))
                 }
-                DnsPropertyData::AllowUpdate(AllowUpdate::from_base_type(u32::from_le_bytes(data_bytes.try_into().unwrap())))
             },
             0x00000008 => {
-                if data_bytes.len() != 8 {
+                if is_default {
+                    DnsPropertyData::SecureTime(utc_seconds_relative_to_1601(0))
+                } else if data_bytes.len() != 8 {
                     return None;
+                } else {
+                    // technically u64, but unlikely to make a difference
+                    let seconds = i64::from_le_bytes(data_bytes.try_into().unwrap());
+                    DnsPropertyData::SecureTime(utc_seconds_relative_to_1601(seconds))
                 }
-                // technically u64, but unlikely to make a difference
-                let seconds = i64::from_le_bytes(data_bytes.try_into().unwrap());
-                DnsPropertyData::SecureTime(utc_seconds_relative_to_1601(seconds))
             },
             0x00000010 => {
-                if data_bytes.len() != 4 {
+                if is_default {
+                    DnsPropertyData::NoRefreshInterval { hours: 168 }
+                } else if data_bytes.len() != 4 {
                     return None;
+                } else {
+                    DnsPropertyData::NoRefreshInterval { hours: u32::from_le_bytes(data_bytes.try_into().unwrap()) }
                 }
-                DnsPropertyData::NoRefreshInterval { hours: u32::from_le_bytes(data_bytes.try_into().unwrap()) }
             },
             0x00000020 => {
-                if data_bytes.len() != 4 {
+                if is_default {
+                    DnsPropertyData::   RefreshInterval { hours: 168 }
+                } else if data_bytes.len() != 4 {
                     return None;
+                } else {
+                    DnsPropertyData::RefreshInterval { hours: u32::from_le_bytes(data_bytes.try_into().unwrap()) }
                 }
-                DnsPropertyData::RefreshInterval { hours: u32::from_le_bytes(data_bytes.try_into().unwrap()) }
             },
             0x00000040 => {
-                if data_bytes.len() != 4 {
+                if is_default {
+                    DnsPropertyData::AgingState(Boolean::False)
+                } else if data_bytes.len() != 4 {
                     return None;
+                } else {
+                    DnsPropertyData::AgingState(Boolean::from_base_type(u32::from_le_bytes(data_bytes.try_into().unwrap())))
                 }
-                DnsPropertyData::AgingState(Boolean::from_base_type(u32::from_le_bytes(data_bytes.try_into().unwrap())))
             },
             0x00000011 => {
-                let servers = parse_ip4_array(data_bytes)?;
-                DnsPropertyData::ScavengingServers(servers)
+                if is_default {
+                    DnsPropertyData::ScavengingServers(Vec::with_capacity(0))
+                } else {
+                    let servers = parse_ip4_array(data_bytes)?;
+                    DnsPropertyData::ScavengingServers(servers)
+                }
             },
             0x00000012 => {
-                if data_bytes.len() != 4 {
+                if is_default {
+                    DnsPropertyData::AgingEnabledTime { hours: 0 }
+                } else if data_bytes.len() != 4 {
                     return None;
+                } else {
+                    DnsPropertyData::AgingEnabledTime { hours: u32::from_le_bytes(data_bytes.try_into().unwrap()) }
                 }
-                DnsPropertyData::AgingEnabledTime { hours: u32::from_le_bytes(data_bytes.try_into().unwrap()) }
             },
             0x00000080 => {
                 if data_bytes.len() % 2 != 0 {
@@ -151,12 +178,20 @@ impl DnsProperty {
                 DnsPropertyData::DeletedFromHostname(hostname)
             },
             0x00000081 => {
-                let servers = parse_ip4_array(data_bytes)?;
-                DnsPropertyData::MasterServers(servers)
+                if is_default {
+                    DnsPropertyData::MasterServers(Vec::with_capacity(0))
+                } else {
+                    let servers = parse_ip4_array(data_bytes)?;
+                    DnsPropertyData::MasterServers(servers)
+                }
             },
             0x00000082 => {
-                let servers = parse_ip4_array(data_bytes)?;
-                DnsPropertyData::AutoNsServers(servers)
+                if is_default {
+                    DnsPropertyData::AutoNsServers(Vec::with_capacity(0))
+                } else {
+                    let servers = parse_ip4_array(data_bytes)?;
+                    DnsPropertyData::AutoNsServers(servers)
+                }
             },
             0x00000083 => {
                 if data_bytes.len() != 4 {
@@ -165,16 +200,28 @@ impl DnsProperty {
                 DnsPropertyData::DcPromoConvert(DcPromoFlag::from_base_type(u32::from_le_bytes(data_bytes.try_into().unwrap())))
             },
             0x00000090 => {
-                let servers = parse_dns_addr_array(data_bytes)?;
-                DnsPropertyData::ScavengingServersDa(servers)
+                if is_default {
+                    DnsPropertyData::ScavengingServersDa(Vec::with_capacity(0))
+                } else {
+                    let servers = parse_dns_addr_array(data_bytes)?;
+                    DnsPropertyData::ScavengingServersDa(servers)
+                }
             },
             0x00000091 => {
-                let servers = parse_dns_addr_array(data_bytes)?;
-                DnsPropertyData::MasterServersDa(servers)
+                if is_default {
+                    DnsPropertyData::MasterServersDa(Vec::with_capacity(0))
+                } else {
+                    let servers = parse_dns_addr_array(data_bytes)?;
+                    DnsPropertyData::MasterServersDa(servers)
+                }
             },
             0x00000092 => {
-                let servers = parse_dns_addr_array(data_bytes)?;
-                DnsPropertyData::AutoNsServersDa(servers)
+                if is_default {
+                    DnsPropertyData::AutoNsServersDa(Vec::with_capacity(0))
+                } else {
+                    let servers = parse_dns_addr_array(data_bytes)?;
+                    DnsPropertyData::AutoNsServersDa(servers)
+                }
             },
             0x00000100 => {
                 if data_bytes.len() != 4 {
@@ -190,6 +237,7 @@ impl DnsProperty {
             name_length,
             flag,
             version,
+            is_default,
             data,
         })
     }
