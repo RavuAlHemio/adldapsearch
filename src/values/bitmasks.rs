@@ -78,3 +78,49 @@ pub enum InstanceType {
     ConfigAllowRename = 0x40000000,
     DisallowDelete = 0x80000000,
 }
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/5026a939-44ba-47b2-99cf-386a9e674b04
+#[bitmask(u32)]
+#[bitmask_config(vec_debug)]
+#[derive(Deserialize, Serialize)]
+pub enum TrustDirection {
+    Inbound = 0x00000001,
+    Outbound = 0x00000002,
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/e9a2d23c-c31e-4a6f-88a0-6646fdb51a3c
+#[bitmask(u32)]
+#[bitmask_config(vec_debug)]
+#[derive(Deserialize, Serialize)]
+pub enum TrustAttributes {
+    NonTransitive = 0x00000001,
+    UplevelOnly = 0x00000002,
+    QuarantinedDomain = 0x00000004,
+    ForestTransitive = 0x00000008,
+    CrossOrganization = 0x00000010,
+    WithinForest = 0x00000020,
+    TreatAsExternal = 0x00000040,
+    UsesRc4Encryption = 0x00000080,
+    CrossOrganizationNoTgtDelegation = 0x00000200,
+    PrivilegedIdentityManagementTrust = 0x00000400,
+    CrossOrganizationEnableTgtDelegation = 0x00000800,
+    DisableAuthTargetValidation = 0x00001000,
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-kile/6cfc7b50-11ed-4b4d-846d-6f08f0812919
+#[bitmask(u32)]
+#[bitmask_config(vec_debug)]
+#[derive(Deserialize, Serialize)]
+pub enum SupportedEncryptionTypes {
+    DesCbcCrc = 0x0000_0001,
+    DesCbcMd5 = 0x0000_0002,
+    Rc4Hmac = 0x0000_0004,
+    Aes128CtsHmacSha1_96 = 0x0000_0008,
+    Aes256CtsHmacSha1_96 = 0x0000_0010,
+    Aes256CtsHmacSha1_96Sk = 0x0000_0020,
+
+    FastSupported = 0x0001_0000,
+    CompoundIdentitySupported = 0x0002_0000,
+    ClaimsSupported = 0x0004_0000,
+    ResourceSidCompressionDisabled = 0x0008_0000,
+}

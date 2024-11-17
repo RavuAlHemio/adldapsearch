@@ -1,4 +1,4 @@
-use from_to_repr::FromToRepr;
+use from_to_repr::{from_to_other, FromToRepr};
 use serde::{Deserialize, Serialize};
 
 
@@ -32,4 +32,16 @@ pub(crate) enum FunctionalityLevel {
     Win2012 = 5,
     Win2012R2 = 6,
     Win2016 = 7,
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/36565693-b5e4-4f37-b0a8-c1b12138e18e
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[from_to_other(base_type = u32, derive_compare = "as_int")]
+pub(crate) enum TrustType {
+    Downlevel = 0x00000001,
+    Uplevel = 0x00000002,
+    Mit = 0x00000003,
+    Dce = 0x00000004,
+    AzureActiveDirectory = 0x00000005,
+    Other(u32),
 }

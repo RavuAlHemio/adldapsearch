@@ -8,13 +8,17 @@ use base64::prelude::{BASE64_STANDARD, Engine};
 use chrono::{DateTime, Local, NaiveDate, TimeDelta, Utc};
 use uuid::Uuid;
 
-use crate::values::bitmasks::{InstanceType, SystemFlags, UserAccountControl};
-use crate::values::enums::{FunctionalityLevel, SamAccountType};
+use crate::values::bitmasks::{
+    InstanceType, SupportedEncryptionTypes, SystemFlags, TrustAttributes, TrustDirection,
+    UserAccountControl,
+};
+use crate::values::enums::{FunctionalityLevel, SamAccountType, TrustType};
 use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
 use crate::values::structs::replication::{DsaSignatureState1, ReplUpToDateVector2, RepsFromTo};
 use crate::values::structs::security::SecurityDescriptor;
+use crate::values::structs::trust::TrustForestTrustInfo;
 
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -224,6 +228,18 @@ pub(crate) fn output_special_string_value(key: &str, value: &str) -> bool {
     } else if key == "instanceType" {
         output_as_enum_or_bitflags!(key, value, u32, InstanceType);
         true
+    } else if key == "msDS-SupportedEncryptionTypes" {
+        output_as_enum_or_bitflags!(key, value, u32, SupportedEncryptionTypes);
+        true
+    } else if key == "trustAttributes" {
+        output_as_enum_or_bitflags!(key, value, u32, TrustAttributes);
+        true
+    } else if key == "trustDirection" {
+        output_as_enum_or_bitflags!(key, value, u32, TrustDirection);
+        true
+    } else if key == "trustType" {
+        output_as_enum_or_bitflags!(key, value, u32, TrustType);
+        true
     } else if key == "accountExpires" || key == "lastLogon" || key == "lastLogonTimestamp" || key == "badPasswordTime" || key == "pwdLastSet" || key == "creationTime" {
         output_timestamp_value(key, value);
         true
@@ -243,7 +259,7 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
     if key == "objectGUID" || key == "mS-DS-ConsistencyGuid" || key == "msExchMailboxGuid" {
         output_guid_value(key, value);
         true
-    } else if key == "objectSid" {
+    } else if key == "objectSid" || key == "securityIdentifier" {
         output_sid_value(key, value);
         true
     } else if key == "replUpToDateVector" {
@@ -260,6 +276,9 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
         true
     } else if key == "dSASignature" {
         output_as_struct!(key, value, DsaSignatureState1);
+        true
+    } else if key == "msDS-TrustForestTrustInfo" {
+        output_as_struct!(key, value, TrustForestTrustInfo);
         true
     } else if key == "nTSecurityDescriptor" || key == "msExchMailboxSecurityDescriptor" {
         if let Some(sd) = SecurityDescriptor::try_from_bytes(value) {
