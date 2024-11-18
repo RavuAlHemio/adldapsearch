@@ -14,6 +14,7 @@ use crate::values::bitmasks::{
 };
 use crate::values::enums::{FunctionalityLevel, SamAccountType, TrustType};
 use crate::values::oids::KNOWN_OIDS;
+use crate::values::structs::dfsr::dfsr_schedule_to_string;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
 use crate::values::structs::replication::{DsaSignatureState1, ReplUpToDateVector2, RepsFromTo};
@@ -258,6 +259,20 @@ macro_rules! output_as_struct {
     };
 }
 
+macro_rules! output_stringification_result {
+    ($key:expr, $value:expr, $string_func:ident) => {
+        if let Some(mut string_val) = $string_func($value) {
+            string_val = string_val.replace("\r\n", "\n").replace("\r", "\n");
+            println!("{}:::", $key);
+            for line in string_val.split("\n") {
+                println!(" {}", line);
+            }
+        } else {
+            output_binary_value_as_hexdump($key, $value);
+        }
+    };
+}
+
 pub(crate) fn output_special_string_value(key: &str, value: &str) -> bool {
     if key == "userAccountControl" {
         output_as_enum_or_bitflags!(key, value, u32, UserAccountControl);
@@ -341,15 +356,10 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
         output_utf16_string_with_bom(key, value);
         true
     } else if key == "logonHours" {
-        if let Some(mut lhts) = logon_hours_to_string(value) {
-            lhts = lhts.replace("\r\n", "\n").replace("\r", "\n");
-            println!("{}:::", key);
-            for line in lhts.split("\n") {
-                println!(" {}", line);
-            }
-        } else {
-            output_binary_value_as_hexdump(key, value);
-        }
+        output_stringification_result!(key, value, logon_hours_to_string);
+        true
+    } else if key == "msDFSR-Schedule" {
+        output_stringification_result!(key, value, dfsr_schedule_to_string);
         true
     } else {
         false
