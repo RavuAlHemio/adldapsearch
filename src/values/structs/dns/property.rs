@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use bitmask_enum::bitmask;
+use bitflags::bitflags;
 use chrono::{DateTime, Utc};
 use from_to_repr::from_to_other;
 use serde::{Deserialize, Serialize};
@@ -227,7 +227,7 @@ impl DnsProperty {
                 if data_bytes.len() != 4 {
                     return None;
                 }
-                DnsPropertyData::DbFlags(DnsRpcNodeFlags::from(u32::from_le_bytes(data_bytes.try_into().unwrap())))
+                DnsPropertyData::DbFlags(DnsRpcNodeFlags::from_bits_retain(u32::from_le_bytes(data_bytes.try_into().unwrap())))
             },
             other => {
                 DnsPropertyData::Other { id: other, data: data_bytes.to_vec() }
@@ -316,24 +316,24 @@ pub(crate) enum DcPromoFlag {
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dnsp/f448341f-512d-414a-aaa3-e303d592fcd2
-#[bitmask(u32)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub(crate) enum DnsRpcNodeFlags {
-    CacheData = 0x80000000,
-    ZoneRoot = 0x40000000,
-    AuthZoneRoot = 0x20000000,
-    ZoneDelegation = 0x10000000,
-    RecordDefaultTtl = 0x08000000,
-    RecordTtlChange = 0x04000000,
-    RecordCreatePtr = 0x02000000,
-    NodeSticky = 0x01000000,
-    NodeComplete = 0x00800000,
-    SuppressNotify = 0x00010000,
-    AgingOn = 0x00020000,
-    OpenAcl = 0x00040000,
-    RecordWireFormat = 0x00100000,
-    SuppressRecordUpdatePtr = 0x00200000,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub(crate) struct DnsRpcNodeFlags : u32 {
+        const CacheData = 0x80000000;
+        const ZoneRoot = 0x40000000;
+        const AuthZoneRoot = 0x20000000;
+        const ZoneDelegation = 0x10000000;
+        const RecordDefaultTtl = 0x08000000;
+        const RecordTtlChange = 0x04000000;
+        const RecordCreatePtr = 0x02000000;
+        const NodeSticky = 0x01000000;
+        const NodeComplete = 0x00800000;
+        const SuppressNotify = 0x00010000;
+        const AgingOn = 0x00020000;
+        const OpenAcl = 0x00040000;
+        const RecordWireFormat = 0x00100000;
+        const SuppressRecordUpdatePtr = 0x00200000;
+    }
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dnsp/e8651544-0fbb-4038-8232-375ff2d8a55e

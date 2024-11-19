@@ -1,4 +1,4 @@
-use bitmask_enum::bitmask;
+use bitflags::bitflags;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
@@ -89,7 +89,7 @@ impl TrustInfoRecord {
                 let name_vec = bytes[21..21+name_length].to_vec();
                 let name = String::from_utf8(name_vec).ok()?;
                 let data = TopLevelNameTrustRecord {
-                    flags: NameFlags::from(flags),
+                    flags: NameFlags::from_bits_retain(flags),
                     timestamp,
                     name,
                 };
@@ -147,7 +147,7 @@ impl TrustInfoRecord {
                 }
 
                 Some(Self::DomainInfo(DomainInfoTrustRecord {
-                    flags: DomainFlags::from(flags),
+                    flags: DomainFlags::from_bits_retain(flags),
                     timestamp,
                     sid,
                     dns_name,
@@ -289,24 +289,24 @@ impl TrustInfoRecord {
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/66387402-cb2b-490c-bf2a-f4ad687397e4
-#[bitmask(u32)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum NameFlags {
-    DisabledNew = 0x0000_0001,
-    DisabledAdmin = 0x0000_0002,
-    DisabledConflict = 0x0000_0004,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct NameFlags : u32 {
+        const DisabledNew = 0x0000_0001;
+        const DisabledAdmin = 0x0000_0002;
+        const DisabledConflict = 0x0000_0004;
+    }
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/66387402-cb2b-490c-bf2a-f4ad687397e4
-#[bitmask(u32)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum DomainFlags {
-    SidDisabledAdmin = 0x0000_0001,
-    SidDisabledConflict = 0x0000_0002,
-    NetBiosDisabledAdmin = 0x0000_0004,
-    NetBiosDisabledConflict = 0x0000_0008,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct DomainFlags : u32 {
+        const SidDisabledAdmin = 0x0000_0001;
+        const SidDisabledConflict = 0x0000_0002;
+        const NetBiosDisabledAdmin = 0x0000_0004;
+        const NetBiosDisabledConflict = 0x0000_0008;
+    }
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/66387402-cb2b-490c-bf2a-f4ad687397e4
@@ -400,14 +400,14 @@ mod tests {
         assert_eq!(trust_info.version, 1);
         assert_eq!(trust_info.records.len(), 3);
         if let TrustInfoRecord::TopLevelName(tln) = &trust_info.records[0] {
-            assert_eq!(tln.flags, 0);
+            assert_eq!(tln.flags.bits(), 0);
             assert_eq!(tln.timestamp.timestamp(), 946684799);
             assert_eq!(tln.name, "adtests.example.com");
         } else {
             panic!("records[0] is not a TopLevelName record");
         }
         if let TrustInfoRecord::DomainInfo(di) = &trust_info.records[1] {
-            assert_eq!(di.flags, 0);
+            assert_eq!(di.flags.bits(), 0);
             assert_eq!(di.timestamp.timestamp(), 946684799);
             assert_eq!(di.sid.version, 1);
             assert_eq!(di.sid.authority, 5);

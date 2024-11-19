@@ -228,7 +228,7 @@ fn output_utf16_string_with_bom(key: &str, bin_value: &[u8]) {
 }
 
 
-macro_rules! output_as_enum_or_bitflags {
+macro_rules! output_as_enum {
     ($key:expr, $value:expr, $int_type:ty, $enum:ty) => {
         if let Ok(int_val) = <$int_type>::from_str_radix($value, 10) {
             #[allow(irrefutable_let_patterns)]
@@ -238,6 +238,22 @@ macro_rules! output_as_enum_or_bitflags {
                 println!("{}: {} ({:?})", $key, int_val, enum_val);
             } else {
                 output_string_value_as_string($key, $value);
+            }
+        } else {
+            output_string_value_as_string($key, $value);
+        }
+    };
+}
+
+macro_rules! output_as_bitflags {
+    ($key:expr, $value:expr, $int_type:ty, $enum:ty) => {
+        if let Ok(int_val) = <$int_type>::from_str_radix($value, 10) {
+            #[allow(irrefutable_let_patterns)]
+            if int_val == 0 {
+                println!("{}: {}", $key, int_val);
+            } else {
+                let enum_val = <$enum>::from_bits_retain(int_val);
+                println!("{}: {} ({:?})", $key, int_val, enum_val);
             }
         } else {
             output_string_value_as_string($key, $value);
@@ -275,31 +291,31 @@ macro_rules! output_stringification_result {
 
 pub(crate) fn output_special_string_value(key: &str, value: &str) -> bool {
     if key == "userAccountControl" {
-        output_as_enum_or_bitflags!(key, value, u32, UserAccountControl);
+        output_as_bitflags!(key, value, u32, UserAccountControl);
         true
     } else if key == "sAMAccountType" {
-        output_as_enum_or_bitflags!(key, value, u32, SamAccountType);
+        output_as_enum!(key, value, u32, SamAccountType);
         true
     } else if key == "domainControllerFunctionality" || key == "domainFunctionality" || key == "forestFunctionality" || key == "msDS-Behavior-Version" {
-        output_as_enum_or_bitflags!(key, value, u32, FunctionalityLevel);
+        output_as_enum!(key, value, u32, FunctionalityLevel);
         true
     } else if key == "systemFlags" {
-        output_as_enum_or_bitflags!(key, value, i32, SystemFlags);
+        output_as_bitflags!(key, value, i32, SystemFlags);
         true
     } else if key == "instanceType" {
-        output_as_enum_or_bitflags!(key, value, u32, InstanceType);
+        output_as_bitflags!(key, value, u32, InstanceType);
         true
     } else if key == "msDS-SupportedEncryptionTypes" {
-        output_as_enum_or_bitflags!(key, value, u32, SupportedEncryptionTypes);
+        output_as_bitflags!(key, value, u32, SupportedEncryptionTypes);
         true
     } else if key == "trustAttributes" {
-        output_as_enum_or_bitflags!(key, value, u32, TrustAttributes);
+        output_as_bitflags!(key, value, u32, TrustAttributes);
         true
     } else if key == "trustDirection" {
-        output_as_enum_or_bitflags!(key, value, u32, TrustDirection);
+        output_as_bitflags!(key, value, u32, TrustDirection);
         true
     } else if key == "trustType" {
-        output_as_enum_or_bitflags!(key, value, u32, TrustType);
+        output_as_enum!(key, value, u32, TrustType);
         true
     } else if key == "accountExpires" || key == "lastLogon" || key == "lastLogonTimestamp" || key == "badPasswordTime" || key == "pwdLastSet" || key == "creationTime" {
         output_timestamp_value(key, value);

@@ -1,6 +1,6 @@
 use std::net::{Ipv4Addr, Ipv6Addr};
 
-use bitmask_enum::bitmask;
+use bitflags::bitflags;
 use chrono::{DateTime, Utc};
 use from_to_repr::from_to_other;
 use serde::{Deserialize, Serialize};
@@ -29,14 +29,14 @@ pub enum Rank {
 
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dnsp/ac793981-1c60-43b8-be59-cdbb5c4ecb8a
-#[bitmask(u16)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum Flags {
-    ZoneRoot = 0x4000,
-    AuthZoneRoot = 0x2000,
-    CacheData = 0x8000,
-    RecordWireFormat = 0x0010,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct Flags : u16 {
+        const ZoneRoot = 0x4000;
+        const AuthZoneRoot = 0x2000;
+        const CacheData = 0x8000;
+        const RecordWireFormat = 0x0010;
+    }
 }
 
 
@@ -67,7 +67,7 @@ impl DnsRecord {
         let kind = u16::from_le_bytes(bytes[2..4].try_into().unwrap()).into();
         let version = bytes[4];
         let rank: Rank = bytes[5].into();
-        let flags: Flags = u16::from_le_bytes(bytes[6..8].try_into().unwrap()).into();
+        let flags = Flags::from_bits_retain(u16::from_le_bytes(bytes[6..8].try_into().unwrap()));
         let serial = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
         let ttl_seconds = u32::from_be_bytes(bytes[12..16].try_into().unwrap());
         let timestamp = u32::from_le_bytes(bytes[16..20].try_into().unwrap());
@@ -249,12 +249,12 @@ pub struct TlsAssociationData {
     pub certificate_association_data: Vec<u8>,
 }
 
-#[bitmask(u32)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum WinsMappingFlag {
-    Scope = 0x8000_0000,
-    Local = 0x0001_0000,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct WinsMappingFlag : u32 {
+        const Scope = 0x8000_0000;
+        const Local = 0x0001_0000;
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -782,7 +782,7 @@ impl Data {
                 if bytes.len() < 16 {
                     return None;
                 }
-                let mapping_flag: WinsMappingFlag = u32::from_le_bytes(bytes[0..4].try_into().unwrap()).into();
+                let mapping_flag = WinsMappingFlag::from_bits_retain(u32::from_le_bytes(bytes[0..4].try_into().unwrap()));
                 let lookup_timeout = u32::from_le_bytes(bytes[4..8].try_into().unwrap());
                 let cache_timeout = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
                 let wins_server_count: usize = u32::from_le_bytes(bytes[12..16].try_into().unwrap()).try_into().unwrap();
@@ -812,7 +812,7 @@ impl Data {
                 if bytes.len() < 13 {
                     return None;
                 }
-                let mapping_flag: WinsMappingFlag = u32::from_le_bytes(bytes[0..4].try_into().unwrap()).into();
+                let mapping_flag = WinsMappingFlag::from_bits_retain(u32::from_le_bytes(bytes[0..4].try_into().unwrap()));
                 let lookup_timeout = u32::from_le_bytes(bytes[4..8].try_into().unwrap());
                 let cache_timeout = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
                 let mut position = 12;

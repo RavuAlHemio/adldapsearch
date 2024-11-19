@@ -1,7 +1,7 @@
 use std::fmt::{self, Write as _};
 use std::str::FromStr;
 
-use bitmask_enum::bitmask;
+use bitflags::bitflags;
 use from_to_repr::from_to_other;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -237,50 +237,50 @@ impl FromStr for Sid {
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/7a53f60e-e730-4dfe-bbe9-b21b62eb790b
-#[bitmask(u32)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum AccessMask {
-    WriteOwner = 0x0008_0000,
-    WriteDacl = 0x0004_0000,
-    ReadControl = 0x0002_0000,
-    Delete = 0x0001_0000,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct AccessMask : u32 {
+        const WriteOwner = 0x0008_0000;
+        const WriteDacl = 0x0004_0000;
+        const ReadControl = 0x0002_0000;
+        const Delete = 0x0001_0000;
 
-    DsCreateChild = 0x0000_0001,
-    DsDeleteChild = 0x0000_0002,
-    DsListChildren = 0x0000_0004,
-    DsSelfWrite = 0x0000_0008,
-    DsReadProp = 0x0000_0010,
-    DsWriteProp = 0x0000_0020,
-    DsDeleteTree = 0x0000_0040,
-    DsListObject = 0x0000_0080,
-    DsControlAccess = 0x0000_0100,
+        const DsCreateChild = 0x0000_0001;
+        const DsDeleteChild = 0x0000_0002;
+        const DsListChildren = 0x0000_0004;
+        const DsSelfWrite = 0x0000_0008;
+        const DsReadProp = 0x0000_0010;
+        const DsWriteProp = 0x0000_0020;
+        const DsDeleteTree = 0x0000_0040;
+        const DsListObject = 0x0000_0080;
+        const DsControlAccess = 0x0000_0100;
+    }
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/25fa6565-6cb0-46ab-a30a-016b32c4939a
-#[bitmask(u32)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum MandatoryMask {
-    NoWriteUp = 0x0000_0001,
-    NoReadUp = 0x0000_0002,
-    NoExecuteUp = 0x0000_0004,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct MandatoryMask : u32 {
+        const NoWriteUp = 0x0000_0001;
+        const NoReadUp = 0x0000_0002;
+        const NoExecuteUp = 0x0000_0004;
+    }
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/21f2b5f0-7376-45bb-bc31-eaa60841dbe9
-#[bitmask(u32)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum ClaimFlags {
-    FciManual = 0x0001_0000,
-    FciPolicyDerived = 0x0002_0000,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct ClaimFlags : u32 {
+        const FciManual = 0x0001_0000;
+        const FciPolicyDerived = 0x0002_0000;
 
-    NonInheritable = 0x0001,
-    ValueCaseSensitive = 0x0002,
-    UseForDenyOnly = 0x0004,
-    DisabledByDefault = 0x0008,
-    Disabled = 0x0010,
-    Mandatory = 0x0020,
+        const NonInheritable = 0x0001;
+        const ValueCaseSensitive = 0x0002;
+        const UseForDenyOnly = 0x0004;
+        const DisabledByDefault = 0x0008;
+        const Disabled = 0x0010;
+        const Mandatory = 0x0020;
+    }
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/21f2b5f0-7376-45bb-bc31-eaa60841dbe9
@@ -310,7 +310,7 @@ impl ClaimSecurityAttribute1 {
         let name_offset: usize = u32::from_le_bytes(bytes[0..4].try_into().unwrap()).try_into().unwrap();
         let value_type = u16::from_le_bytes(bytes[4..6].try_into().unwrap());
         let reserved = u16::from_le_bytes(bytes[6..8].try_into().unwrap());
-        let flags: ClaimFlags = u32::from_le_bytes(bytes[8..12].try_into().unwrap()).into();
+        let flags = ClaimFlags::from_bits_retain(u32::from_le_bytes(bytes[8..12].try_into().unwrap()));
         let value_count: usize = u32::from_le_bytes(bytes[12..16].try_into().unwrap()).try_into().unwrap();
 
         if name_offset >= bytes.len() {
@@ -565,17 +565,17 @@ impl AceData {
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/628ebb1d-c509-4ea0-a10f-77ef97ca4586
-#[bitmask(u8)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum AceFlags {
-    ObjectInherit = 0x01,
-    ContainerInherit = 0x02,
-    NoPropagateInherit = 0x04,
-    InheritOnly = 0x08,
-    Inherited = 0x10,
-    SuccessfulAccessFlag = 0x40,
-    FailedAccessFlag = 0x80,
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct AceFlags : u8 {
+        const ObjectInherit = 0x01;
+        const ContainerInherit = 0x02;
+        const NoPropagateInherit = 0x04;
+        const InheritOnly = 0x08;
+        const Inherited = 0x10;
+        const SuccessfulAccessFlag = 0x40;
+        const FailedAccessFlag = 0x80;
+    }
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/628ebb1d-c509-4ea0-a10f-77ef97ca4586
@@ -603,7 +603,7 @@ impl Ace {
             return None;
         }
         let ace_type = bytes[0];
-        let flags: AceFlags = bytes[1].into();
+        let flags = AceFlags::from_bits_retain(bytes[1]);
         let ace_size: usize = u16::from_le_bytes(bytes[2..4].try_into().unwrap()).into();
         if ace_size != bytes.len() {
             // incorrect size
@@ -617,7 +617,7 @@ impl Ace {
                 if payload.len() < 4 {
                     return None;
                 }
-                let mask: AccessMask = u32::from_le_bytes(payload[0..4].try_into().unwrap()).into();
+                let mask = AccessMask::from_bits_retain(u32::from_le_bytes(payload[0..4].try_into().unwrap()));
                 let sid_size = Sid::get_length(&payload[4..])?;
                 let sid = Sid::try_from_bytes(&payload[4..4+sid_size])?;
                 let application_data = payload[4+sid_size..].to_vec();
@@ -642,7 +642,7 @@ impl Ace {
                 if payload.len() < 8 {
                     return None;
                 }
-                let mask: AccessMask = u32::from_le_bytes(payload[0..4].try_into().unwrap()).into();
+                let mask = AccessMask::from_bits_retain(u32::from_le_bytes(payload[0..4].try_into().unwrap()));
                 let object_flags = u32::from_le_bytes(payload[4..8].try_into().unwrap());
 
                 let mut payload_offset = 8;
@@ -695,7 +695,7 @@ impl Ace {
                 if payload.len() < 4 {
                     return None;
                 }
-                let mask: MandatoryMask = u32::from_le_bytes(payload[0..4].try_into().unwrap()).into();
+                let mask = MandatoryMask::from_bits_retain(u32::from_le_bytes(payload[0..4].try_into().unwrap()));
                 let sid_size = Sid::get_length(&payload[4..])?;
                 let sid = Sid::try_from_bytes(&payload[4..4+sid_size])?;
                 let application_data = payload[4+sid_size..].to_vec();
@@ -711,7 +711,7 @@ impl Ace {
                 if payload.len() < 4 {
                     return None;
                 }
-                let mask: AccessMask = u32::from_le_bytes(payload[0..4].try_into().unwrap()).into();
+                let mask = AccessMask::from_bits_retain(u32::from_le_bytes(payload[0..4].try_into().unwrap()));
                 let sid_size = Sid::get_length(&payload[4..])?;
                 let sid = Sid::try_from_bytes(&payload[4..4+sid_size])?;
                 let attribute_data = ClaimSecurityAttribute1::try_from_bytes(&payload[4+sid_size..])?;
@@ -835,7 +835,7 @@ impl Acl {
                 AceData::Other { .. } => return None,
             };
             write!(ret, "{};", ace_type).unwrap();
-            if ace.flags != ace.flags.truncate() {
+            if ace.flags & AceFlags::all() != ace.flags {
                 // some of the flags are not known
                 return None;
             }
@@ -862,7 +862,7 @@ impl Acl {
             }
             write!(ret, ";").unwrap();
             if let Some(mask) = ace.data.access_mask() {
-                if mask != mask.truncate() {
+                if mask & AccessMask::all() != mask {
                     // contains unknown flags
                     return None;
                 }
@@ -906,7 +906,7 @@ impl Acl {
                     write!(ret, "WO").unwrap();
                 }
             } else if let AceData::SystemMandatoryLabel { mask, .. } = &ace.data {
-                if *mask != mask.truncate() {
+                if *mask & MandatoryMask::all() != *mask {
                     // contains unknown flags
                     return None;
                 }
@@ -944,57 +944,58 @@ impl Acl {
 }
 
 
-#[bitmask(u16)]
-#[bitmask_config(vec_debug)]
-#[derive(Deserialize, Serialize)]
-pub enum SecurityDescriptorControl {
-    /// The owner SID is a default value.
-    OwnerDefaulted = 0x0001,
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-dtyp/628ebb1d-c509-4ea0-a10f-77ef97ca4586
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct SecurityDescriptorControl : u16 {
+        /// The owner SID is a default value.
+        const OwnerDefaulted = 0x0001;
 
-    /// The group SID is a default value.
-    GroupDefaulted = 0x0002,
+        /// The group SID is a default value.
+        const GroupDefaulted = 0x0002;
 
-    /// A DACL is present in this security descriptor.
-    DaclPresent = 0x0004,
+        /// A DACL is present in this security descriptor.
+        const DaclPresent = 0x0004;
 
-    /// The security descriptor has a DACL with default values.
-    DaclDefaulted = 0x0008,
+        /// The security descriptor has a DACL with default values.
+        const DaclDefaulted = 0x0008;
 
-    /// A SACL is present in this security descriptor.
-    SaclPresent = 0x0010,
+        /// A SACL is present in this security descriptor.
+        const SaclPresent = 0x0010;
 
-    /// The security descriptor has a SACL with default values.
-    SaclDefaulted = 0x0020,
+        /// The security descriptor has a SACL with default values.
+        const SaclDefaulted = 0x0020;
 
-    /// Inherit the DACL in this security descriptor to child objects.
-    DaclAutoInheritReq = 0x0100,
+        /// Inherit the DACL in this security descriptor to child objects.
+        const DaclAutoInheritReq = 0x0100;
 
-    /// Inherit the SACL in this security descriptor to child objects.
-    SaclAutoInheritReq = 0x0200,
+        /// Inherit the SACL in this security descriptor to child objects.
+        const SaclAutoInheritReq = 0x0200;
 
-    /// The DACL in this security descriptor has been inherited from an ancestor object.
-    DaclAutoInherited = 0x0400,
+        /// The DACL in this security descriptor has been inherited from an ancestor object.
+        const DaclAutoInherited = 0x0400;
 
-    /// The SACL in this security descriptor has been inherited from an ancestor object.
-    SaclAutoInherited = 0x0800,
+        /// The SACL in this security descriptor has been inherited from an ancestor object.
+        const SaclAutoInherited = 0x0800;
 
-    /// The DACL is protected against entries inherited from ancestor objects.
-    DaclProtected = 0x1000,
+        /// The DACL is protected against entries inherited from ancestor objects.
+        const DaclProtected = 0x1000;
 
-    /// The SACL is protected against entries inherited from ancestor objects.
-    SaclProtected = 0x2000,
+        /// The SACL is protected against entries inherited from ancestor objects.
+        const SaclProtected = 0x2000;
 
-    /// The resource manager control is valid.
-    RmControlValid = 0x4000,
+        /// The resource manager control is valid.
+        const RmControlValid = 0x4000;
 
-    /// The security descriptor is self-relative.
-    ///
-    /// This means that the `owner`, `group`, `sacl` and `dacl` fields are all offsets from the
-    /// beginning of the structure. If this bit is not set, the security descriptor is absolute,
-    /// meaning the four fields are pointers to these structures in memory.
-    ///
-    /// Serialized security descriptors must be self-relative.
-    SelfRelative = 0x8000,
+        /// The security descriptor is self-relative.
+        ///
+        /// This means that the `owner`, `group`, `sacl` and `dacl` fields are all offsets from the
+        /// beginning of the structure. If this bit is not set, the security descriptor is absolute,
+        /// meaning the four fields are pointers to these structures in memory.
+        ///
+        /// Serialized security descriptors must be self-relative.
+        const SelfRelative = 0x8000;
+    }
 }
 
 
@@ -1021,7 +1022,7 @@ impl SecurityDescriptor {
         }
         let sbz1 = bytes[1];
         let control_word = u16::from_le_bytes(bytes[2..4].try_into().unwrap());
-        let control = SecurityDescriptorControl::from(control_word);
+        let control = SecurityDescriptorControl::from_bits_retain(control_word);
         if !control.contains(SecurityDescriptorControl::SelfRelative) {
             // invalid serialization
             return None;
