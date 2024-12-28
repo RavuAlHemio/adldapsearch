@@ -18,6 +18,7 @@ use crate::values::structs::dfsr::dfsr_schedule_to_string;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
 use crate::values::structs::replication::{DsaSignatureState1, ReplUpToDateVector2, RepsFromTo};
+use crate::values::structs::schema::PrefixMap;
 use crate::values::structs::security::{logon_hours_to_string, SecurityDescriptor};
 use crate::values::structs::trust::TrustForestTrustInfo;
 
@@ -356,6 +357,9 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
         true
     } else if key == "msDS-TrustForestTrustInfo" {
         output_as_struct!(key, value, TrustForestTrustInfo);
+        true
+    } else if key == "prefixMap" {
+        output_as_struct!(key, value, PrefixMap);
         true
     } else if key == "nTSecurityDescriptor" || key == "msExchMailboxSecurityDescriptor" {
         if let Some(sd) = SecurityDescriptor::try_from_bytes(value) {
