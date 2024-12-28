@@ -36,16 +36,53 @@ bitflags! {
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/1e38247d-8234-4273-9de3-bbf313548631
 bitflags! {
     #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
-    pub struct SystemFlags : i32 {
+    pub struct GenericSystemFlags : i32 {
+        const DisallowMoveOnDelete = 0x02000000;
+        const DomainDisallowMove = 0x04000000;
+        const DomainDisallowRename = 0x08000000;
+        const ConfigAllowLimitedMove = 0x10000000;
+        const ConfigAllowMove = 0x20000000;
+        const ConfigAllowRename = 0x40000000;
+        const DisallowDelete = -0x80000000;
+    }
+
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct CrossRefSystemFlags : i32 {
+        const Nc = 0x00000001;
+        const Domain = 0x00000002;
+        const NotGcReplicated = 0x00000004;
+
+        const DisallowMoveOnDelete = 0x02000000;
+        const DomainDisallowMove = 0x04000000;
+        const DomainDisallowRename = 0x08000000;
+        const ConfigAllowLimitedMove = 0x10000000;
+        const ConfigAllowMove = 0x20000000;
+        const ConfigAllowRename = 0x40000000;
+        const DisallowDelete = -0x80000000;
+    }
+
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct ClassSchemaSystemFlags : i32 {
+        const SchemaBaseObject = 0x00000010;
+
+        const DisallowMoveOnDelete = 0x02000000;
+        const DomainDisallowMove = 0x04000000;
+        const DomainDisallowRename = 0x08000000;
+        const ConfigAllowLimitedMove = 0x10000000;
+        const ConfigAllowMove = 0x20000000;
+        const ConfigAllowRename = 0x40000000;
+        const DisallowDelete = -0x80000000;
+    }
+
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct AttributeSchemaSystemFlags : i32 {
         const AttrNotReplicated = 0x00000001;
-        const CrossrefNtdsNc = 0x00000001;
         const AttrReqPartialSetMember = 0x00000002;
-        const CrossrefNtdsDomain = 0x00000002;
         const AttrIsConstructed = 0x00000004;
-        const CrossrefNtdsNotGcReplicated = 0x00000004;
         const AttrIsOperational = 0x00000008;
         const SchemaBaseObject = 0x00000010;
         const AttrIsRdn = 0x00000020;
+
         const DisallowMoveOnDelete = 0x02000000;
         const DomainDisallowMove = 0x04000000;
         const DomainDisallowRename = 0x08000000;

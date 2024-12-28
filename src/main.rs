@@ -142,8 +142,13 @@ async fn run() {
             }
         }
 
-        for (key, values) in all_keys_values {
-            output_values(&key, &values);
+        let object_classes = all_keys_values
+            .get("objectClass")
+            .map(|oc| oc.as_slice())
+            .unwrap_or(&[]);
+
+        for (key, values) in &all_keys_values {
+            output_values(key, values, object_classes);
         }
     }
 }

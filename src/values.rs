@@ -12,8 +12,8 @@ use regex::Regex;
 use uuid::Uuid;
 
 use crate::values::bitmasks::{
-    InstanceType, SupportedEncryptionTypes, SystemFlags, TrustAttributes, TrustDirection,
-    UserAccountControl,
+    AttributeSchemaSystemFlags, ClassSchemaSystemFlags, CrossRefSystemFlags, GenericSystemFlags,
+    InstanceType, SupportedEncryptionTypes, TrustAttributes, TrustDirection, UserAccountControl,
 };
 use crate::values::enums::{FunctionalityLevel, SamAccountType, TrustType};
 use crate::values::oids::KNOWN_OIDS;
@@ -51,6 +51,14 @@ static AD_TIMESTAMP_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(concat!(
 pub enum LdapValue {
     String(String),
     Binary(Vec<u8>),
+}
+impl LdapValue {
+    pub fn is_string(&self, value: &str) -> bool {
+        match self {
+            Self::String(s) => value == s,
+            Self::Binary(_) => false,
+        }
+    }
 }
 
 
@@ -316,7 +324,7 @@ macro_rules! output_stringification_result {
     };
 }
 
-pub(crate) fn output_special_string_value(key: &str, value: &str) -> bool {
+pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes: &[LdapValue]) -> bool {
     if key == "userAccountControl" {
         output_as_bitflags!(key, value, u32, UserAccountControl);
         true
@@ -327,7 +335,15 @@ pub(crate) fn output_special_string_value(key: &str, value: &str) -> bool {
         output_as_enum!(key, value, u32, FunctionalityLevel);
         true
     } else if key == "systemFlags" {
-        output_as_bitflags!(key, value, i32, SystemFlags);
+        if object_classes.iter().any(|oc| oc.is_string("crossRef")) {
+            output_as_bitflags!(key, value, i32, CrossRefSystemFlags);
+        } else if object_classes.iter().any(|oc| oc.is_string("classSchema")) {
+            output_as_bitflags!(key, value, i32, ClassSchemaSystemFlags);
+        } else if object_classes.iter().any(|oc| oc.is_string("attributeSchema")) {
+            output_as_bitflags!(key, value, i32, AttributeSchemaSystemFlags);
+        } else {
+            output_as_bitflags!(key, value, i32, GenericSystemFlags);
+        }
         true
     } else if key == "instanceType" {
         output_as_bitflags!(key, value, u32, InstanceType);
@@ -419,7 +435,7 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
 }
 
 
-pub(crate) fn output_values(key: &str, values: &[LdapValue]) {
+pub(crate) fn output_values(key: &str, values: &[LdapValue], object_classes: &[LdapValue]) {
     for value in values {
         match value {
             LdapValue::Binary(bin_value) => {
@@ -428,7 +444,7 @@ pub(crate) fn output_values(key: &str, values: &[LdapValue]) {
                 }
             },
             LdapValue::String(str_value) => {
-                if !output_special_string_value(key, str_value) {
+                if !output_special_string_value(key, str_value, object_classes) {
                     output_string_value_as_string(key, str_value);
                 }
             },
