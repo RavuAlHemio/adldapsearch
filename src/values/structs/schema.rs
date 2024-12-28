@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::oid_prefix::OidPrefix;
 
 
@@ -59,4 +61,36 @@ pub struct PrefixEntry {
     pub db_prefix: u16,
     // ber_prefix_length: u16,
     pub oid_prefix: OidPrefix, // [u8; ber_prefix_length]
+}
+
+#[derive(Clone, Copy, Debug, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct SchemaInfo {
+    pub identifier: u8,
+    pub schema_version: u32,
+    pub last_updater_invocation_id: Uuid,
+}
+impl SchemaInfo {
+    pub fn try_from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != 21 {
+            return None;
+        }
+
+        let identifier = bytes[0];
+        if identifier != 0xFF {
+            // format might have changed; don't risk it
+            return None;
+        }
+
+        // big endian!
+        let schema_version = u32::from_be_bytes(bytes[1..5].try_into().unwrap());
+
+        // little endian again
+        let last_updater_invocation_id = Uuid::from_bytes_le(bytes[5..21].try_into().unwrap());
+
+        Some(Self {
+            identifier,
+            schema_version,
+            last_updater_invocation_id,
+        })
+    }
 }

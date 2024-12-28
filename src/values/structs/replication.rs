@@ -1,11 +1,15 @@
 use std::fmt;
 
+use bitflags::bitflags;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error as _;
 use uuid::Uuid;
 
-use crate::values::{nul_terminated_utf16le_string_at_offset, utc_seconds_relative_to_1601};
+use crate::values::{
+    ad_time_to_ticks_relative_to_1601, nul_terminated_utf16le_string_at_offset, TICKS_PER_SECOND,
+    utc_seconds_relative_to_1601, utc_ticks_relative_to_1601,
+};
 
 
 // gleaned from ldp.exe
@@ -374,6 +378,41 @@ impl DsaSignatureState1 {
             backup_error_latency_secs,
             dsa_guid,
         })
+    }
+}
+
+
+// gleaned from ldp.exe
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct DsCorePropagationFlags : u32 {
+        const NewSd = 0x00000001;
+        const NewAncestors = 0x00000002;
+        const ToLeaves = 0x00000004;
+        const AncestryInconsistentInSubtree = 0x00000008;
+        const AncestryBeingUpdatedInSubtree = 0x00000010;
+    }
+}
+
+
+#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum DsCorePropagationData {
+    Flags(DsCorePropagationFlags),
+    Time(DateTime<Utc>),
+}
+impl DsCorePropagationData {
+    pub fn try_from_str(value: &str) -> Option<Self> {
+        let ticks = ad_time_to_ticks_relative_to_1601(value)?;
+        if ticks >= 0 && ticks < 0x1_0000_0000 {
+            // assume flags
+            // (otherwise, the timestamp is about seven minutes past midnight on New Year's 1601)
+            let flags_u32: u32 = (ticks / TICKS_PER_SECOND).try_into().unwrap();
+            let flags = DsCorePropagationFlags::from_bits_retain(flags_u32);
+            Some(Self::Flags(flags))
+        } else {
+            // timestamp
+            Some(Self::Time(utc_ticks_relative_to_1601(ticks)))
+        }
     }
 }
 

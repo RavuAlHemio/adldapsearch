@@ -4,8 +4,11 @@ pub(crate) mod oids;
 pub(crate) mod structs;
 
 
+use std::sync::LazyLock;
+
 use base64::prelude::{BASE64_STANDARD, Engine};
 use chrono::{DateTime, Local, NaiveDate, TimeDelta, Utc};
+use regex::Regex;
 use uuid::Uuid;
 
 use crate::values::bitmasks::{
@@ -17,10 +20,31 @@ use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dfsr::dfsr_schedule_to_string;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
-use crate::values::structs::replication::{DsaSignatureState1, ReplUpToDateVector2, RepsFromTo};
-use crate::values::structs::schema::PrefixMap;
+use crate::values::structs::replication::{
+    DsaSignatureState1, DsCorePropagationData, ReplUpToDateVector2, RepsFromTo,
+};
+use crate::values::structs::schema::{PrefixMap, SchemaInfo};
 use crate::values::structs::security::{logon_hours_to_string, SecurityDescriptor};
 use crate::values::structs::trust::TrustForestTrustInfo;
+
+
+const TICKS_PER_SECOND: i64 = 10_000_000;
+const WINDOWS_EPOCH: DateTime<Utc> = NaiveDate::from_ymd_opt(1601, 1, 1)
+    .unwrap()
+    .and_hms_opt(0, 0, 0).unwrap()
+    .and_utc();
+static AD_TIMESTAMP_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(concat!(
+    "^",
+    "(?P<year>[0-9]{4})",
+    "(?P<month>[0-9]{2})",
+    "(?P<day>[0-9]{2})",
+    "(?P<hour>[0-9]{2})",
+    "(?P<minute>[0-9]{2})",
+    "(?P<second>[0-9]{2})",
+    "\\.(?P<fracsec>[0-9]+)",
+    "Z", // timezone indicator for UTC
+    "$",
+)).expect("failed to parse AD timestamp regex"));
 
 
 #[derive(Clone, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
@@ -83,13 +107,9 @@ fn output_timestamp_value(key: &str, value: &str) {
             return;
         },
     };
-    let windows_epoch = NaiveDate::from_ymd_opt(1601, 1, 1)
-        .unwrap()
-        .and_hms_opt(0, 0, 0).unwrap()
-        .and_utc();
     let microseconds = TimeDelta::microseconds(parsed / 10);
     let remaining_nanoseconds = TimeDelta::nanoseconds((parsed % 10) * 100);
-    let timestamp_utc = windows_epoch + microseconds + remaining_nanoseconds;
+    let timestamp_utc = WINDOWS_EPOCH + microseconds + remaining_nanoseconds;
     let timestamp_local = timestamp_utc.with_timezone(&Local);
     println!("{}: {} ({})", key, value, timestamp_local.format("%Y-%m-%dT%H:%M:%S%.f%z"));
 }
@@ -264,14 +284,20 @@ macro_rules! output_as_bitflags {
 
 macro_rules! output_as_struct {
     ($key:expr, $value:expr, $struct:ty) => {
-        if let Some(struct_val) = <$struct>::try_from_bytes($value) {
+        output_as_struct!(@perform, try_from_bytes, output_binary_value_as_hexdump, $key, $value, $struct)
+    };
+    (@string, $key:expr, $value:expr, $struct:ty) => {
+        output_as_struct!(@perform, try_from_str, output_string_value_as_string, $key, $value, $struct)
+    };
+    (@perform, $try_from_func:ident, $otherwise_output_func:ident, $key:expr, $value:expr, $struct:ty) => {
+        if let Some(struct_val) = <$struct>::$try_from_func($value) {
             let formatted = format!("{:#?}", struct_val);
             println!("{}:::", $key);
             for line in formatted.split("\n") {
                 println!(" {}", line);
             }
         } else {
-            output_binary_value_as_hexdump($key, $value);
+            $otherwise_output_func($key, $value);
         }
     };
 }
@@ -318,6 +344,9 @@ pub(crate) fn output_special_string_value(key: &str, value: &str) -> bool {
     } else if key == "trustType" {
         output_as_enum!(key, value, u32, TrustType);
         true
+    } else if key == "dSCorePropagationData" {
+        output_as_struct!(@string, key, value, DsCorePropagationData);
+        true
     } else if key == "accountExpires" || key == "lastLogon" || key == "lastLogonTimestamp" || key == "badPasswordTime" || key == "pwdLastSet" || key == "creationTime" {
         output_timestamp_value(key, value);
         true
@@ -360,6 +389,9 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
         true
     } else if key == "prefixMap" {
         output_as_struct!(key, value, PrefixMap);
+        true
+    } else if key == "schemaInfo" {
+        output_as_struct!(key, value, SchemaInfo);
         true
     } else if key == "nTSecurityDescriptor" || key == "msExchMailboxSecurityDescriptor" {
         if let Some(sd) = SecurityDescriptor::try_from_bytes(value) {
@@ -406,24 +438,44 @@ pub(crate) fn output_values(key: &str, values: &[LdapValue]) {
 
 
 pub(crate) fn utc_seconds_relative_to_1601(seconds: i64) -> DateTime<Utc> {
-    let windows_epoch = NaiveDate::from_ymd_opt(1601, 1, 1)
-        .unwrap()
-        .and_hms_opt(0, 0, 0).unwrap()
-        .and_utc();
     let delta = TimeDelta::seconds(seconds);
-    windows_epoch + delta
+    WINDOWS_EPOCH + delta
 }
 
 // 1 tick = 100ns
 pub(crate) fn utc_ticks_relative_to_1601(ticks: i64) -> DateTime<Utc> {
-    let windows_epoch = NaiveDate::from_ymd_opt(1601, 1, 1)
-        .unwrap()
-        .and_hms_opt(0, 0, 0).unwrap()
-        .and_utc();
     let microseconds = TimeDelta::microseconds(ticks / 10);
     let nanoseconds = TimeDelta::nanoseconds((ticks % 10) * 100);
     let delta = microseconds + nanoseconds;
-    windows_epoch + delta
+    WINDOWS_EPOCH + delta
+}
+
+pub(crate) fn ad_time_to_ticks_relative_to_1601(time_str: &str) -> Option<i64> {
+    let time_caps = AD_TIMESTAMP_RE.captures(time_str)?;
+    let year: i32 = time_caps.name("year").unwrap().as_str().parse().ok()?;
+    let month: u32 = time_caps.name("month").unwrap().as_str().parse().ok()?;
+    let day: u32 = time_caps.name("day").unwrap().as_str().parse().ok()?;
+    let hour: u32 = time_caps.name("hour").unwrap().as_str().parse().ok()?;
+    let minute: u32 = time_caps.name("minute").unwrap().as_str().parse().ok()?;
+    let second: u32 = time_caps.name("second").unwrap().as_str().parse().ok()?;
+    let mut nanos_string = time_caps.name("fracsec").unwrap().as_str().to_owned();
+    nanos_string.truncate(9);
+    while nanos_string.len() < 9 {
+        nanos_string.push('0');
+    }
+    let nanos: u32 = nanos_string.parse().ok()?;
+
+    let encoded_time = NaiveDate::from_ymd_opt(year, month, day)?
+        .and_hms_nano_opt(hour, minute, second, nanos)?
+        .and_utc();
+    let delta = encoded_time - WINDOWS_EPOCH;
+    let delta_s_part = delta.num_seconds();
+    let delta_ns_part = delta.subsec_nanos();
+    let delta_tick_part = delta_ns_part / 100;
+
+    delta_s_part
+        .checked_mul(TICKS_PER_SECOND)?
+        .checked_add(delta_tick_part.into())
 }
 
 pub(crate) fn nul_terminated_utf16le_string(bytes: &[u8]) -> Option<String> {
