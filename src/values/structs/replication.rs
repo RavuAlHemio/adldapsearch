@@ -1,3 +1,5 @@
+use std::fmt;
+
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde::de::Error as _;
@@ -174,7 +176,7 @@ impl RepsFromTo {
 }
 
 
-#[derive(Clone, Copy, Debug, Eq, Hash, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub(crate) struct ReplTimes {
     pub times: [u8; 84],
 }
@@ -188,6 +190,21 @@ impl ReplTimes {
         } else {
             None
         }
+    }
+}
+impl fmt::Debug for ReplTimes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "ReplTimes {} times: [", '{')?;
+        let mut is_first = true;
+        for t in &self.times {
+            if is_first {
+                is_first = false;
+            } else {
+                write!(f, ", ")?;
+            }
+            write!(f, "{}", t)?;
+        }
+        write!(f, "] {}", '}')
     }
 }
 impl<'de> Deserialize<'de> for ReplTimes {
