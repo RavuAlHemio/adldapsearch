@@ -27,11 +27,12 @@ use crate::values::structs::dfsr::dfsr_schedule_to_string;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
 use crate::values::structs::replication::{
-    DsaSignatureState1, DsCorePropagationData, ReplPropertyMetaData, ReplUpToDateVector2,
-    RepsFromTo,
+    DsaSignatureState1, DsCorePropagationData, PartialAttributeSet, ReplPropertyMetaData,
+    ReplUpToDateVector2, RepsFromTo, SiteAffinity,
 };
 use crate::values::structs::schema::{PrefixMap, SchemaInfo};
-use crate::values::structs::security::{logon_hours_to_string, SecurityDescriptor};
+use crate::values::structs::security::{CachedMembership, logon_hours_to_string, SecurityDescriptor};
+use crate::values::structs::security::key_credential_link::KeyCredentialLinkBlob;
 use crate::values::structs::trust::TrustForestTrustInfo;
 
 
@@ -433,6 +434,9 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
     } else if key == "dSCorePropagationData" {
         output_as_struct!(@string, key, value, DsCorePropagationData);
         true
+    } else if key == "msDS-KeyCredentialLink" {
+        output_as_struct!(@string, key, value, KeyCredentialLinkBlob);
+        true
     } else if key == "accountExpires" || key == "badPasswordTime" || key == "creationTime"
             || key == "lastLogoff" || key == "lastLogon" || key == "lastLogonTimestamp"
             || key == "msDS-ApproximateLastLogonTimeStamp"
@@ -502,6 +506,15 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
     } else if key == "msDS-TrustForestTrustInfo" {
         output_as_struct!(key, value, TrustForestTrustInfo);
         true
+    } else if key == "partialAttributeSet" {
+        output_as_struct!(key, value, PartialAttributeSet);
+        true
+    } else if key == "msDS-Site-Affinity" {
+        output_as_struct!(key, value, SiteAffinity);
+        true
+    } else if key == "msDS-Cached-Membership" {
+        output_as_struct!(key, value, CachedMembership);
+        true
     } else if key == "prefixMap" {
         output_as_struct!(key, value, PrefixMap);
         true
@@ -553,7 +566,10 @@ pub(crate) fn output_values(key: &str, values: &[LdapValue], object_classes: &[L
             },
             LdapValue::String(str_value) => {
                 if !output_special_string_value(key, str_value, object_classes) {
-                    output_string_value_as_string(key, str_value);
+                    // maybe a binary value was heuristically misdetected as a string
+                    if !output_special_binary_value(key, str_value.as_bytes()) {
+                        output_string_value_as_string(key, str_value);
+                    }
                 }
             },
         }

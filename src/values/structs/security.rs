@@ -1,3 +1,6 @@
+pub mod key_credential_link;
+
+
 use std::fmt::{self, Write as _};
 use std::str::FromStr;
 
@@ -1138,6 +1141,81 @@ impl SecurityDescriptor {
             write!(ret, "{}", acl_string).unwrap();
         }
         Some(ret)
+    }
+}
+
+
+#[derive(Clone, Debug, Deserialize, Hash, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct CachedMembership {
+    pub version: u32,
+    // account_count: u32,
+    // account_sid_history_count: u32,
+    // universal_count: u32,
+    // universal_sid_history_count: u32,
+    pub accounts: Vec<Sid>, // [Sid; account_count]
+    pub account_sid_history: Vec<Sid>, // [Sid; account_sid_history_count]
+    pub universals: Vec<Sid>, // [Sid; universal_count]
+    pub universal_sid_history: Vec<Sid>, // [Sid; universal_sid_history_count]
+}
+impl CachedMembership {
+    pub fn try_from_bytes(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() < 20 {
+            return None;
+        }
+
+        let version = u32::from_le_bytes(bytes[0..4].try_into().unwrap());
+        if version != 1 {
+            return None;
+        }
+
+        let account_count = u32::from_le_bytes(bytes[4..8].try_into().unwrap());
+        let account_sid_history_count = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
+        let universal_count = u32::from_le_bytes(bytes[12..16].try_into().unwrap());
+        let universal_sid_history_count = u32::from_le_bytes(bytes[16..20].try_into().unwrap());
+
+        let account_count_usize: usize = account_count.try_into().ok()?;
+        let account_sid_history_count_usize: usize = account_sid_history_count.try_into().ok()?;
+        let universal_count_usize: usize = universal_count.try_into().ok()?;
+        let universal_sid_history_count_usize: usize = universal_sid_history_count.try_into().ok()?;
+
+        let mut accounts: Vec<Sid> = Vec::with_capacity(account_count_usize);
+        let mut account_sid_history: Vec<Sid> = Vec::with_capacity(account_sid_history_count_usize);
+        let mut universals: Vec<Sid> = Vec::with_capacity(universal_count_usize);
+        let mut universal_sid_history: Vec<Sid> = Vec::with_capacity(universal_sid_history_count_usize);
+
+        let mut i = 20;
+        for _ in 0..account_count_usize {
+            let sid_length = Sid::get_length(&bytes[i..])?;
+            let sid = Sid::try_from_bytes(&bytes[i..i+sid_length])?;
+            i += sid_length;
+            accounts.push(sid);
+        }
+        for _ in 0..account_sid_history_count_usize {
+            let sid_length = Sid::get_length(&bytes[i..])?;
+            let sid = Sid::try_from_bytes(&bytes[i..i+sid_length])?;
+            i += sid_length;
+            account_sid_history.push(sid);
+        }
+        for _ in 0..universal_count_usize {
+            let sid_length = Sid::get_length(&bytes[i..])?;
+            let sid = Sid::try_from_bytes(&bytes[i..i+sid_length])?;
+            i += sid_length;
+            universals.push(sid);
+        }
+        for _ in 0..universal_sid_history_count_usize {
+            let sid_length = Sid::get_length(&bytes[i..])?;
+            let sid = Sid::try_from_bytes(&bytes[i..i+sid_length])?;
+            i += sid_length;
+            universal_sid_history.push(sid);
+        }
+
+        Some(Self {
+            version,
+            accounts,
+            account_sid_history,
+            universals,
+            universal_sid_history,
+        })
     }
 }
 

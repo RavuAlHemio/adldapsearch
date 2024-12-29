@@ -492,6 +492,71 @@ impl ReplPropertyMetaDataEntry {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct PartialAttributeSet {
+    pub version: u32,
+    pub flag: u32,
+    // attribute_count: u32
+    pub partial_attributes: Vec<u32>, // [u32; attribute_count]
+}
+impl PartialAttributeSet {
+    pub fn try_from_bytes(value: &[u8]) -> Option<Self> {
+        if value.len() < 12 {
+            return None;
+        }
+
+        let version = u32::from_le_bytes(value[0..4].try_into().unwrap());
+        if version != 1 {
+            // format might have changed
+            return None;
+        }
+
+        let flag = u32::from_le_bytes(value[4..8].try_into().unwrap());
+        let attribute_count = u32::from_le_bytes(value[8..12].try_into().unwrap());
+        let attribute_count_usize: usize = attribute_count.try_into().ok()?;
+
+        if value.len() != 12 + attribute_count_usize*4 {
+            return None;
+        }
+
+        let mut partial_attributes = Vec::with_capacity(attribute_count_usize);
+        let mut i = 12;
+        for _ in 0..attribute_count {
+            let attribute_id = u32::from_le_bytes(value[i..i+4].try_into().unwrap());
+            i += 4;
+            partial_attributes.push(attribute_id);
+        }
+
+        Some(Self {
+            version,
+            flag,
+            partial_attributes,
+        })
+    }
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct SiteAffinity {
+    pub site_guid: Uuid, // u128
+    pub timestamp: DateTime<Utc>, // u64
+}
+impl SiteAffinity {
+    pub fn try_from_bytes(value: &[u8]) -> Option<Self> {
+        if value.len() != 24 {
+            return None;
+        }
+
+        let site_guid = Uuid::from_bytes_le(value[0..16].try_into().unwrap());
+        let timestamp_ticks = i64::from_le_bytes(value[16..24].try_into().unwrap());
+        let timestamp = utc_ticks_relative_to_1601(timestamp_ticks);
+
+        Some(Self {
+            site_guid,
+            timestamp,
+        })
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
