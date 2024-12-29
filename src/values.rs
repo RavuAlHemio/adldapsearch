@@ -19,15 +19,16 @@ use crate::values::bitmasks::{
     UserAccountControl,
 };
 use crate::values::enums::{
-    FunctionalityLevel, ObjectClassCategory, OmSyntax, ReplAuthenticationMode, Rid, SamAccountType,
-    TrustType,
+    AttributeSyntax, FunctionalityLevel, ObjectClassCategory, OmObjectClass, OmSyntax,
+    ReplAuthenticationMode, Rid, SamAccountType, TrustType,
 };
 use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dfsr::dfsr_schedule_to_string;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
 use crate::values::structs::replication::{
-    DsaSignatureState1, DsCorePropagationData, ReplUpToDateVector2, RepsFromTo,
+    DsaSignatureState1, DsCorePropagationData, ReplPropertyMetaData, ReplUpToDateVector2,
+    RepsFromTo,
 };
 use crate::values::structs::schema::{PrefixMap, SchemaInfo};
 use crate::values::structs::security::{logon_hours_to_string, SecurityDescriptor};
@@ -264,6 +265,20 @@ fn output_utf16_string_with_bom(key: &str, bin_value: &[u8]) {
 
 
 macro_rules! output_as_enum {
+    (@bytes, $key:expr, $value:expr, $enum:ty) => {
+        if let Some(enum_val) = <$enum>::try_from_bytes($value) {
+            println!("{}: {:?}", $key, enum_val);
+        } else {
+            output_binary_value_as_hexdump($key, $value);
+        }
+    };
+    (@string, $key:expr, $value:expr, $enum:ty) => {
+        if let Some(enum_val) = <$enum>::try_from_str($value) {
+            println!("{}: {} ({:?})", $key, $value, enum_val);
+        } else {
+            output_string_value_as_string($key, $value);
+        }
+    };
     ($key:expr, $value:expr, $int_type:ty, $enum:ty) => {
         if let Ok(int_val) = <$int_type>::from_str_radix($value, 10) {
             #[allow(irrefutable_let_patterns)]
@@ -372,6 +387,9 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
     } else if key == "oMSyntax" {
         output_as_enum!(key, value, u32, OmSyntax);
         true
+    } else if key == "attributeSyntax" {
+        output_as_enum!(@string, key, value, AttributeSyntax);
+        true
     } else if key == "options" {
         if object_classes.iter().any(|oc| oc.is_string("interSiteTransport")) {
             output_as_bitflags!(key, value, u32, InterSiteTransportOptions);
@@ -426,7 +444,8 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
             || key == "pwdLastSet" {
         output_timestamp_value(key, value);
         true
-    } else if key == "supportedCapabilities" || key == "supportedControl" {
+    } else if key == "supportedCapabilities" || key == "supportedControl"
+            || key == "supportedExtension" {
         output_oid(key, value);
         true
     } else if key == "lockoutDuration" || key == "lockOutObservationWindow" || key == "maxPwdAge"
@@ -486,10 +505,16 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
     } else if key == "prefixMap" {
         output_as_struct!(key, value, PrefixMap);
         true
+    } else if key == "replPropertyMetaData" {
+        output_as_struct!(key, value, ReplPropertyMetaData);
+        true
     } else if key == "schemaInfo" {
         output_as_struct!(key, value, SchemaInfo);
         true
-    } else if key == "nTSecurityDescriptor" || key == "msExchMailboxSecurityDescriptor" {
+    } else if key == "fRSRootSecurity" || key == "msExchLogonACL"
+            || key == "msExchMailboxSecurityDescriptor" || key == "msExchPFDefaultAdminACL"
+            || key == "msExchSubmitRelaySD" || key == "nTSecurityDescriptor"
+            || key == "pKIEnrollmentAccess" {
         if let Some(sd) = SecurityDescriptor::try_from_bytes(value) {
             if let Some(sd_string) = sd.try_to_string() {
                 println!("{}: {}", key, sd_string);
@@ -508,6 +533,9 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
         true
     } else if key == "msDFSR-Schedule" {
         output_stringification_result!(key, value, dfsr_schedule_to_string);
+        true
+    } else if key == "oMObjectClass" {
+        output_as_enum!(@bytes, key, value, OmObjectClass);
         true
     } else {
         false

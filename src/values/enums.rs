@@ -145,3 +145,105 @@ pub(crate) enum ReplAuthenticationMode {
     MutualAuthRequired = 0x00000003,
     Other(u32),
 }
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/7cda533e-d7a4-4aec-a517-91d02ff4a1aa
+#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub(crate) enum AttributeSyntax {
+    DistinguishedName,
+    ObjectIdentifier,
+    StringCase,
+    StringTeletex,
+    StringIa5,
+    StringNumeric,
+    DistinguishedNameBinary,
+    Boolean,
+    Integer,
+    OctetString,
+    Time,
+    StringUnicode,
+    Address,
+    DistinguishedNameString,
+    NtSecurityDescriptor,
+    LargeInteger,
+    Sid,
+    Other(String),
+}
+impl AttributeSyntax {
+    pub fn try_from_str(value: &str) -> Option<Self> {
+        let variant = match value {
+            "2.5.5.1" => Self::DistinguishedName,
+            "2.5.5.2" => Self::ObjectIdentifier,
+            "2.5.5.3" => Self::StringCase,
+            "2.5.5.4" => Self::StringTeletex,
+            "2.5.5.5" => Self::StringIa5,
+            "2.5.5.6" => Self::StringNumeric,
+            "2.5.5.7" => Self::DistinguishedNameBinary,
+            "2.5.5.8" => Self::Boolean,
+            "2.5.5.9" => Self::Integer,
+            "2.5.5.10" => Self::OctetString,
+            "2.5.5.11" => Self::Time,
+            "2.5.5.12" => Self::StringUnicode,
+            "2.5.5.13" => Self::Address,
+            "2.5.5.14" => Self::DistinguishedNameString,
+            "2.5.5.15" => Self::NtSecurityDescriptor,
+            "2.5.5.16" => Self::LargeInteger,
+            "2.5.5.17" => Self::Sid,
+            other => Self::Other(other.to_owned()),
+        };
+        Some(variant)
+    }
+
+    #[allow(unused)]
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::DistinguishedName => "2.5.5.1",
+            Self::ObjectIdentifier => "2.5.5.2",
+            Self::StringCase => "2.5.5.3",
+            Self::StringTeletex => "2.5.5.4",
+            Self::StringIa5 => "2.5.5.5",
+            Self::StringNumeric => "2.5.5.6",
+            Self::DistinguishedNameBinary => "2.5.5.7",
+            Self::Boolean => "2.5.5.8",
+            Self::Integer => "2.5.5.9",
+            Self::OctetString => "2.5.5.10",
+            Self::Time => "2.5.5.11",
+            Self::StringUnicode => "2.5.5.12",
+            Self::Address => "2.5.5.13",
+            Self::DistinguishedNameString => "2.5.5.14",
+            Self::NtSecurityDescriptor => "2.5.5.15",
+            Self::LargeInteger => "2.5.5.16",
+            Self::Sid => "2.5.5.17",
+            Self::Other(o) => o,
+        }
+    }
+}
+
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/7cda533e-d7a4-4aec-a517-91d02ff4a1aa
+#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub(crate) enum OmObjectClass {
+    OrName,
+    AccessPoint,
+    Other(Vec<u8>),
+}
+impl OmObjectClass {
+    pub fn try_from_bytes(value: &[u8]) -> Option<Self> {
+        let variant = if value == &[0x56, 0x06, 0x01, 0x02, 0x05, 0x0B, 0x1D] {
+            Self::OrName
+        } else if value == &[0x2B, 0x0C, 0x02, 0x87, 0x73, 0x1C, 0x00, 0x85, 0x3E] {
+            Self::AccessPoint
+        } else {
+            Self::Other(value.to_vec())
+        };
+        Some(variant)
+    }
+
+    #[allow(unused)]
+    pub fn as_bytes(&self) -> &[u8] {
+        match self {
+            Self::OrName => &[0x56, 0x06, 0x01, 0x02, 0x05, 0x0B, 0x1D],
+            Self::AccessPoint => &[0x2B, 0x0C, 0x02, 0x87, 0x73, 0x1C, 0x00, 0x85, 0x3E],
+            Self::Other(o) => o.as_slice(),
+        }
+    }
+}

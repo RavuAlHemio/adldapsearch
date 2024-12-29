@@ -15,6 +15,8 @@ pub static KNOWN_OIDS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock:
     map.insert("1.2.840.113556.1.4.800", "ACTIVE_DIRECTORY");
     map.insert("1.2.840.113556.1.4.801", "SD_FLAGS");
     map.insert("1.2.840.113556.1.4.802", "RANGE_OPTION");
+    map.insert("1.2.840.113556.1.4.803", "MATCHING_RULE_BIT_AND");
+    map.insert("1.2.840.113556.1.4.804", "MATCHING_RULE_BIT_OR");
     map.insert("1.2.840.113556.1.4.805", "TREE_DELETE");
     map.insert("1.2.840.113556.1.4.841", "DIRSYNC");
     map.insert("1.2.840.113556.1.4.970", "GET_STATS");
@@ -25,6 +27,7 @@ pub static KNOWN_OIDS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock:
     map.insert("1.2.840.113556.1.4.1413", "PERMISSIVE_MODIFY");
     map.insert("1.2.840.113556.1.4.1504", "ASQ");
     map.insert("1.2.840.113556.1.4.1670", "ACTIVE_DIRECTORY_V51");
+    map.insert("1.2.840.113556.1.4.1781", "FAST_BIND");
     map.insert("1.2.840.113556.1.4.1791", "ACTIVE_DIRECTORY_LDAP_INTEG");
     map.insert("1.2.840.113556.1.4.1851", "ACTIVE_DIRECTORY_ADAM");
     map.insert("1.2.840.113556.1.4.1852", "QUOTA_CONTROL");
@@ -32,6 +35,7 @@ pub static KNOWN_OIDS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock:
     map.insert("1.2.840.113556.1.4.1907", "SHUTDOWN_NOTIFY");
     map.insert("1.2.840.113556.1.4.1920", "ACTIVE_DIRECTORY_PARTIAL_SECRETS");
     map.insert("1.2.840.113556.1.4.1935", "ACTIVE_DIRECTORY_V60");
+    map.insert("1.2.840.113556.1.4.1941", "MATCHING_RULE_TRANSITIVE_EVALUATION");
     map.insert("1.2.840.113556.1.4.1948", "RANGE_RETRIEVAL_NOERR");
     map.insert("1.2.840.113556.1.4.1974", "FORCE_UPDATE");
     map.insert("1.2.840.113556.1.4.2026", "DN_INPUT");
@@ -44,13 +48,18 @@ pub static KNOWN_OIDS: LazyLock<HashMap<&'static str, &'static str>> = LazyLock:
     map.insert("1.2.840.113556.1.4.2205", "UPDATE_STATS");
     map.insert("1.2.840.113556.1.4.2206", "SEARCH_HINTS");
     map.insert("1.2.840.113556.1.4.2211", "EXPECTED_ENTRY_COUNT");
+    map.insert("1.2.840.113556.1.4.2212", "BATCH_REQUEST");
     map.insert("1.2.840.113556.1.4.2237", "ACTIVE_DIRECTORY_W8");
     map.insert("1.2.840.113556.1.4.2239", "POLICY_HINTS");
+    map.insert("1.2.840.113556.1.4.2253", "MATCHING_RULE_DN_BINARY_COMPLEX");
     map.insert("1.2.840.113556.1.4.2255", "SET_OWNER");
     map.insert("1.2.840.113556.1.4.2256", "BYPASS_QUOTA");
     map.insert("1.2.840.113556.1.4.2309", "LINK_TTL");
     map.insert("1.2.840.113556.1.4.2330", "SET_CORRELATION_ID");
     map.insert("1.2.840.113556.1.4.2354", "THREAD_TRACE_OVERRIDE");
+    map.insert("1.3.6.1.4.1.1466.20037", "START_TLS");
+    map.insert("1.3.6.1.4.1.1466.101.119.1", "TTL_REFRESH");
+    map.insert("1.3.6.1.4.1.4203.1.11.3", "WHO_AM_I");
     map.insert("2.16.840.1.113730.3.4.9", "VLVREQUEST");
     map.insert("2.16.840.1.113730.3.4.10", "VLVRESPONSE");
     map

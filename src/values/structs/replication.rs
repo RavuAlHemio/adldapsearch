@@ -417,6 +417,82 @@ impl DsCorePropagationData {
 }
 
 
+// gleaned from ldp.exe
+#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct ReplPropertyMetaData {
+    pub version: u64,
+    // entry_count: u64,
+    pub entries: Vec<ReplPropertyMetaDataEntry>, // [ReplPropertyMetaDataEntry; entry_count]
+}
+impl ReplPropertyMetaData {
+    pub fn try_from_bytes(value: &[u8]) -> Option<Self> {
+        if value.len() < 16 {
+            return None;
+        }
+
+        let version = u64::from_le_bytes(value[0..8].try_into().unwrap());
+        if version != 1 {
+            // format may have changed; don't risk it
+            return None;
+        }
+
+        let entry_count = u64::from_le_bytes(value[8..16].try_into().unwrap());
+        let entry_count_usize: usize = entry_count.try_into().ok()?;
+        if value.len() != 16 + entry_count_usize*48 {
+            // incorrect length
+            return None;
+        }
+
+        let mut entries = Vec::with_capacity(entry_count_usize);
+        let mut i = 16;
+        for _ in 0..entry_count_usize {
+            let entry_slice = &value[i..i+48];
+            let entry = ReplPropertyMetaDataEntry::try_from_bytes(entry_slice)?;
+            entries.push(entry);
+            i += 48;
+        }
+        Some(Self {
+            version,
+            entries,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct ReplPropertyMetaDataEntry {
+    pub attribute_id: u32,
+    pub version: u32,
+    pub org_timestamp: DateTime<Utc>, // u64
+    pub org_dsa: Uuid, // u128
+    pub org_usn: u64,
+    pub loc_usn: u64,
+}
+impl ReplPropertyMetaDataEntry {
+    pub fn try_from_bytes(value: &[u8]) -> Option<Self> {
+        if value.len() != 48 {
+            return None;
+        }
+
+        let attribute_id = u32::from_le_bytes(value[0..4].try_into().unwrap());
+        let version = u32::from_le_bytes(value[4..8].try_into().unwrap());
+        let org_timestamp_secs = i64::from_le_bytes(value[8..16].try_into().unwrap());
+        let org_timestamp = utc_seconds_relative_to_1601(org_timestamp_secs);
+        let org_dsa = Uuid::from_bytes_le(value[16..32].try_into().unwrap());
+        let org_usn = u64::from_le_bytes(value[32..40].try_into().unwrap());
+        let loc_usn = u64::from_le_bytes(value[40..48].try_into().unwrap());
+
+        Some(Self {
+            attribute_id,
+            version,
+            org_timestamp,
+            org_dsa,
+            org_usn,
+            loc_usn,
+        })
+    }
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::{OtherDra, RepsFromTo};
