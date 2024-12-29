@@ -30,6 +30,21 @@ bitflags! {
         const TRUSTED_TO_AUTH_FOR_DELEGATION = 0x1000000;
         const NO_AUTH_DATA_REQUIRED = 0x2000000;
         const PARTIAL_SECRETS_ACCOUNT = 0x04000000;
+        const USE_AES_KEYS = 0x08000000;
+    }
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/11972272-09ec-4a42-bf5e-3e99b321cf55
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct GroupType : i32 {
+        const BUILTIN_LOCAL_GROUP = 0x00000001;
+        const ACCOUNT_GROUP = 0x00000002;
+        const RESOURCE_GROUP = 0x00000004;
+        const UNIVERSAL_GROUP = 0x00000008;
+        const APP_BASIC_GROUP = 0x00000010;
+        const APP_QUERY_GROUP = 0x00000020;
+        const SECURITY_ENABLED = -0x80000000;
     }
 }
 
@@ -97,22 +112,121 @@ bitflags! {
 bitflags! {
     #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
     pub struct InstanceType : u32 {
-        const AttrNotReplicated = 0x00000001;
-        const CrossrefNtdsNc = 0x00000001;
-        const AttrReqPartialSetMember = 0x00000002;
-        const CrossrefNtdsDomain = 0x00000002;
-        const AttrIsConstructed = 0x00000004;
-        const CrossrefNtdsNotGcReplicated = 0x00000004;
-        const AttrIsOperational = 0x00000008;
-        const SchemaBaseObject = 0x00000010;
-        const AttrIsRdn = 0x00000020;
-        const DisallowMoveOnDelete = 0x02000000;
-        const DomainDisallowMove = 0x04000000;
-        const DomainDisallowRename = 0x08000000;
-        const ConfigAllowLimitedMove = 0x10000000;
-        const ConfigAllowMove = 0x20000000;
-        const ConfigAllowRename = 0x40000000;
-        const DisallowDelete = 0x80000000;
+        const NcHead = 0x0000_0001;
+        const ReplicaNotInstantiated = 0x0000_0002;
+        const Writable = 0x0000_0004;
+        const NcAboveHeld = 0x0000_0008;
+        const NcUnderConstruction = 0x0000_0010;
+        const NcBeingRemoved = 0x0000_0020;
+    }
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/5170a98c-091c-4d34-8ca5-fe77630f112a
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct OptionalFeatureFlags : u32 {
+        const Forest = 0x0000_0001;
+        const Domain = 0x0000_0002;
+        const Disablable = 0x0000_0004;
+        const Server = 0x0000_0008;
+    }
+}
+
+// https://learn.microsoft.com/en-us/windows/win32/adschema/a-pwdproperties
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct PasswordProperties : u32 {
+        const Complex = 0x0000_0001;
+        const NoAnonChange = 0x0000_0002;
+        const NoClearChange = 0x0000_0004;
+        const LockoutAdmins = 0x0000_0008;
+        const StoreCleartext = 0x0000_0010;
+        const RefuseChange = 0x0000_0020;
+        const NoLwmOwfChange = 0x0000_0040;
+    }
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/7c1cdf82-1ecc-4834-827e-d26ff95fb207
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct SearchFlags : u32 {
+        const Index = 0x0000_0001;
+        const ContainerIndex = 0x0000_0002;
+        const AmbiguousNameResolution = 0x0000_0004;
+        const PreserveOnDelete = 0x0000_0008;
+        const Copy = 0x0000_0010;
+        const TupleIndex = 0x0000_0020;
+        const SubtreeIndex = 0x0000_0040;
+        const Confidential = 0x0000_0080;
+        const NeverAuditValue = 0x0000_0100;
+        const RodcFiltered = 0x0000_0200;
+        const ExtendedLinkTracking = 0x0000_0400;
+        const BaseOnly = 0x0000_0800;
+        const PartitionSecret = 0x0000_1000;
+    }
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/66db6a63-52d2-4980-b87b-7b2d598dba81
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct InterSiteTransportOptions : u32 {
+        const IgnoreSchedules = 0x0000_0001;
+        const BridgesRequired = 0x0000_0002;
+    }
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/d6cca73b-9696-4700-9dab-7c4e54502960
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct DsConnectionOptions : u32 {
+        const Generated = 0x0000_0001;
+        const TwoWaySync = 0x0000_0002;
+        const OverrideNotifyDefault = 0x0000_0004;
+        const UseNotify = 0x0000_0008;
+        const DisableIntersiteCompression = 0x0000_0010;
+        const UserOwnedSchedule = 0x0000_0020;
+        const RodcTopology = 0x0000_0040;
+    }
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/8ebf2419-1169-4413-88e2-12a5ad499cf5
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct DsaSettingsOptions : u32 {
+        const IsGc = 0x0000_0001;
+        const DisableInboundReplication = 0x0000_0002;
+        const DisableOutboundReplication = 0x0000_0004;
+        const DisableNtdsconnTranslation = 0x0000_0008;
+        const DisableSpnRegistration = 0x0000_0010;
+        const GenerateOwnTopology = 0x0000_0020;
+    }
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/d300c652-8873-41a4-a50c-90cc89d5bdd8
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct SiteSettingsOptions : u32 {
+        const AutoTopologyDisabled = 0x0000_0001;
+        const TopologyCleanupDisabled = 0x0000_0002;
+        const MinHopsTopologyDisabled = 0x0000_0004;
+        const DetectStaleDisabled = 0x0000_0008;
+        const InterSiteAutoTopologyDisabled = 0x0000_0010;
+        const GroupCachingEnabled = 0x0000_0020;
+        const ForceKccWhistlerBehavior = 0x0000_0040;
+        const ForceKccW2kElection = 0x0000_0080;
+        const RandomBridgeheadSelectionDisabled = 0x0000_0100;
+        const ScheduleHashingEnabled = 0x0000_0200;
+        const RedundantServerTopologyEnabled = 0x0000_0400;
+    }
+}
+
+// https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/f148e965-e4d7-413a-acfc-0e9a9e591708
+bitflags! {
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub struct SiteConnectionOptions : u32 {
+        const UseNotify = 0x0000_0001;
+        const TwoWaySync = 0x0000_0002;
+        const DisableCompression = 0x0000_0004;
     }
 }
 

@@ -12,10 +12,16 @@ use regex::Regex;
 use uuid::Uuid;
 
 use crate::values::bitmasks::{
-    AttributeSchemaSystemFlags, ClassSchemaSystemFlags, CrossRefSystemFlags, GenericSystemFlags,
-    InstanceType, SupportedEncryptionTypes, TrustAttributes, TrustDirection, UserAccountControl,
+    AttributeSchemaSystemFlags, ClassSchemaSystemFlags, CrossRefSystemFlags, DsaSettingsOptions,
+    DsConnectionOptions, GenericSystemFlags, GroupType, InstanceType, InterSiteTransportOptions,
+    OptionalFeatureFlags, PasswordProperties, SearchFlags, SiteConnectionOptions,
+    SiteSettingsOptions, SupportedEncryptionTypes, TrustAttributes, TrustDirection,
+    UserAccountControl,
 };
-use crate::values::enums::{FunctionalityLevel, SamAccountType, TrustType};
+use crate::values::enums::{
+    FunctionalityLevel, ObjectClassCategory, OmSyntax, ReplAuthenticationMode, Rid, SamAccountType,
+    TrustType,
+};
 use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dfsr::dfsr_schedule_to_string;
 use crate::values::structs::dns::property::DnsProperty;
@@ -325,13 +331,19 @@ macro_rules! output_stringification_result {
 }
 
 pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes: &[LdapValue]) -> bool {
-    if key == "userAccountControl" {
+    if key == "userAccountControl" || key == "msDs-User-Account-Control-Computed" {
         output_as_bitflags!(key, value, u32, UserAccountControl);
+        true
+    } else if key == "groupType" {
+        output_as_bitflags!(key, value, i32, GroupType);
         true
     } else if key == "sAMAccountType" {
         output_as_enum!(key, value, u32, SamAccountType);
         true
-    } else if key == "domainControllerFunctionality" || key == "domainFunctionality" || key == "forestFunctionality" || key == "msDS-Behavior-Version" {
+    } else if key == "domainControllerFunctionality" || key == "domainFunctionality"
+            || key == "forestFunctionality" || key == "msDS-Behavior-Version"
+            || key == "msDS-RequiredDomainBehaviorVersion"
+            || key == "msDS-RequiredForestBehaviorVersion" {
         output_as_enum!(key, value, u32, FunctionalityLevel);
         true
     } else if key == "systemFlags" {
@@ -348,6 +360,46 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
     } else if key == "instanceType" {
         output_as_bitflags!(key, value, u32, InstanceType);
         true
+    } else if key == "msDS-ReplAuthenticationMode" {
+        output_as_enum!(key, value, u32, ReplAuthenticationMode);
+        true
+    } else if key == "msDS-OptionalFeatureFlags" {
+        output_as_bitflags!(key, value, u32, OptionalFeatureFlags);
+        true
+    } else if key == "objectClassCategory" {
+        output_as_enum!(key, value, u32, ObjectClassCategory);
+        true
+    } else if key == "oMSyntax" {
+        output_as_enum!(key, value, u32, OmSyntax);
+        true
+    } else if key == "options" {
+        if object_classes.iter().any(|oc| oc.is_string("interSiteTransport")) {
+            output_as_bitflags!(key, value, u32, InterSiteTransportOptions);
+            true
+        } else if object_classes.iter().any(|oc| oc.is_string("nTDSConnection")) {
+            output_as_bitflags!(key, value, u32, DsConnectionOptions);
+            true
+        } else if object_classes.iter().any(|oc| oc.is_string("nTDSDSA")) {
+            output_as_bitflags!(key, value, u32, DsaSettingsOptions);
+            true
+        } else if object_classes.iter().any(|oc| oc.is_string("ntDSSiteSettings")) {
+            output_as_bitflags!(key, value, u32, SiteSettingsOptions);
+            true
+        } else if object_classes.iter().any(|oc| oc.is_string("siteConnection") || oc.is_string("siteLink")) {
+            output_as_bitflags!(key, value, u32, SiteConnectionOptions);
+            true
+        } else {
+            false
+        }
+    } else if key == "primaryGroupID" {
+        output_as_enum!(key, value, u32, Rid);
+        true
+    } else if key == "pwdProperties" {
+        output_as_bitflags!(key, value, u32, PasswordProperties);
+        true
+    } else if key == "searchFlags" {
+        output_as_bitflags!(key, value, u32, SearchFlags);
+        true
     } else if key == "msDS-SupportedEncryptionTypes" {
         output_as_bitflags!(key, value, u32, SupportedEncryptionTypes);
         true
@@ -363,26 +415,54 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
     } else if key == "dSCorePropagationData" {
         output_as_struct!(@string, key, value, DsCorePropagationData);
         true
-    } else if key == "accountExpires" || key == "lastLogon" || key == "lastLogonTimestamp" || key == "badPasswordTime" || key == "pwdLastSet" || key == "creationTime" {
+    } else if key == "accountExpires" || key == "badPasswordTime" || key == "creationTime"
+            || key == "lastLogoff" || key == "lastLogon" || key == "lastLogonTimestamp"
+            || key == "msDS-ApproximateLastLogonTimeStamp"
+            || key == "msDS-Cached-Membership-Time-Stamp"
+            || key == "msDS-KeyApproximateLastLogonTimeStamp"
+            || key == "msDS-LastSuccessfulInteractiveLogonTime"
+            || key == "msDS-LastFailedInteractiveLogonTime"
+            || key == "msDS-UserPasswordExpiryTimeComputed"
+            || key == "pwdLastSet" {
         output_timestamp_value(key, value);
         true
     } else if key == "supportedCapabilities" || key == "supportedControl" {
         output_oid(key, value);
         true
-    } else if key == "lockoutDuration" || key == "lockOutObservationWindow" || key == "maxPwdAge" || key == "minPwdAge" || key == "forceLogoff" {
+    } else if key == "lockoutDuration" || key == "lockOutObservationWindow" || key == "maxPwdAge"
+            || key == "minPwdAge" || key == "msDS-LockoutDuration"
+            || key == "msDS-LockoutObservationWindow" || key == "msDS-MaximumPasswordAge"
+            || key == "msDS-MinimumPasswordAge" || key == "forceLogoff" {
         output_negative_interval_value(key, value);
         true
     } else {
         false
     }
+
+    // TODO: possibly want to convert to local time?
+    // key == "createTimeStamp" || key == "currentTime" || key == "modifyTimeStamp"
+    // || key == "msDS-Entry-Time-To-Die" || key == "msDS-LocalEffectiveDeletionTime"
+    // || key == "msDS-LocalEffectiveRecycleTime" || key == "schemaUpdate" || key == "whenChanged"
+    // || key == "whenCreated"
+
+    // TODO: LAPS time
+    // key == "ms-Mcs-AdmPwdExpirationTime" || key == "msLaps-PasswordExpirationTime"
 }
 
 
 pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
-    if key == "objectGUID" || key == "mS-DS-ConsistencyGuid" || key == "msExchMailboxGuid" || key == "msDFS-GenerationGUIDv2" || key == "msDFS-NamespaceIdentityGUIDv2" {
+    if key == "objectGUID" || key == "mS-DS-ConsistencyGuid" || key == "msExchMailboxGuid"
+            || key == "msDFS-GenerationGUIDv2" || key == "msDFS-NamespaceIdentityGUIDv2"
+            || key == "msDS-OptionalFeatureGuid" || key == "parentGUID" || key == "invocationId"
+            || key == "attributeSecurityGUID" || key == "schemaIDGUID" || key == "serverClassID"
+            || key == "netbootGuid" || key == "msDS-DeviceID" {
         output_guid_value(key, value);
         true
-    } else if key == "objectSid" || key == "securityIdentifier" || key == "msExchMasterAccountSid" {
+    } else if key == "mS-DS-CreatorSID" || key == "msDS-LdapQosPolicyTarget"
+            || key == "msDS-ServiceAccountSID" || key == "msDS-ShadowPrincipalSid"
+            || key == "msExchMasterAccountSid" || key == "objectSid" || key == "securityIdentifier"
+            || key == "sidHistory" || key == "tokenGroups" || key == "tokenGroupsGlobalAndUniversal"
+            || key == "tokenGroupsNoGCAcceptable" {
         output_sid_value(key, value);
         true
     } else if key == "replUpToDateVector" {
