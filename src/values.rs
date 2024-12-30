@@ -533,11 +533,13 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
 
 
 pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
-    if key == "objectGUID" || key == "mS-DS-ConsistencyGuid" || key == "msExchMailboxGuid"
-            || key == "msDFS-GenerationGUIDv2" || key == "msDFS-NamespaceIdentityGUIDv2"
-            || key == "msDS-OptionalFeatureGuid" || key == "parentGUID" || key == "invocationId"
-            || key == "attributeSecurityGUID" || key == "schemaIDGUID" || key == "serverClassID"
-            || key == "netbootGuid" || key == "msDS-DeviceID" {
+    if key == "attributeSecurityGUID" || key == "invocationId" || key == "mS-DS-ConsistencyGuid"
+            || key == "msDFS-GenerationGUIDv2" || key == "msDFS-LinkIdentityGUIDv2"
+            || key == "msDFS-NamespaceIdentityGUIDv2" || key == "msDFSR-ContentSetGuid"
+            || key == "msDFSR-ReplicationGroupGuid" || key == "msDS-DeviceID"
+            || key == "msDS-OptionalFeatureGuid" || key == "msExchMailboxGuid"
+            || key == "netbootGuid" || key == "objectGUID" || key == "parentGUID"
+            || key == "schemaIDGUID" || key == "serverClassID" {
         output_guid_value(key, value);
         true
     } else if key == "mS-DS-CreatorSID" || key == "msDS-LdapQosPolicyTarget"
