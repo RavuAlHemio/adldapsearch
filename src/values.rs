@@ -18,20 +18,28 @@ use crate::values::bitmasks::{
     SiteSettingsOptions, SupportedEncryptionTypes, TrustAttributes, TrustDirection,
     UserAccountControl,
 };
+use crate::values::bitmasks::exchange::{
+    AddressBookFlags, ElcMailboxFlags, ModerationFlags, MobileMailboxFlags, ProvisioningFlags,
+    RecipientTypeDetails, SoftDeletedStatus, TransportSettingFlags,
+};
 use crate::values::enums::{
     AttributeSyntax, FunctionalityLevel, ObjectClassCategory, OmObjectClass, OmSyntax,
-    ReplAuthenticationMode, Rid, SamAccountType, TrustType,
+    ReplAuthenticationMode, Rid, SamAccountType, ServerState, TrustType,
 };
+use crate::values::enums::exchange::{CapabilityIdentifier, RecipientDisplayType, RoleGroupType};
 use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dfsr::dfsr_schedule_to_string;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
+use crate::values::structs::exchange::{ExchangeVersion, InternetEncoding, TextMessagingState};
 use crate::values::structs::replication::{
     DsaSignatureState1, DsCorePropagationData, PartialAttributeSet, ReplPropertyMetaData,
     ReplUpToDateVector2, RepsFromTo, SiteAffinity,
 };
 use crate::values::structs::schema::{PrefixMap, SchemaInfo};
-use crate::values::structs::security::{CachedMembership, logon_hours_to_string, SecurityDescriptor};
+use crate::values::structs::security::{
+    CachedMembership, logon_hours_to_string, RidPool, SecurityDescriptor,
+};
 use crate::values::structs::security::key_credential_link::KeyCredentialLinkBlob;
 use crate::values::structs::trust::TrustForestTrustInfo;
 
@@ -347,7 +355,8 @@ macro_rules! output_stringification_result {
 }
 
 pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes: &[LdapValue]) -> bool {
-    if key == "userAccountControl" || key == "msDs-User-Account-Control-Computed" {
+    if key == "userAccountControl" || key == "msDs-User-Account-Control-Computed"
+            || key == "msExchUserAccountControl" {
         output_as_bitflags!(key, value, u32, UserAccountControl);
         true
     } else if key == "groupType" {
@@ -419,6 +428,9 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
     } else if key == "searchFlags" {
         output_as_bitflags!(key, value, u32, SearchFlags);
         true
+    } else if key == "serverState" {
+        output_as_enum!(key, value, u32, ServerState);
+        true
     } else if key == "msDS-SupportedEncryptionTypes" {
         output_as_bitflags!(key, value, u32, SupportedEncryptionTypes);
         true
@@ -436,6 +448,52 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
         true
     } else if key == "msDS-KeyCredentialLink" {
         output_as_struct!(@string, key, value, KeyCredentialLinkBlob);
+        true
+    } else if key == "rIDAvailablePool" {
+        output_as_struct!(@string, key, value, RidPool);
+        true
+    } else if key == "msExchAddressBookFlags" {
+        output_as_bitflags!(key, value, i32, AddressBookFlags);
+        true
+    } else if key == "msExchCapabilityIdentifiers" {
+        output_as_enum!(key, value, u32, CapabilityIdentifier);
+        true
+    } else if key == "msExchELCMailboxFlags" {
+        output_as_bitflags!(key, value, u32, ElcMailboxFlags);
+        true
+    } else if key == "msExchMobileMailboxFlags" {
+        output_as_bitflags!(key, value, i32, MobileMailboxFlags);
+        true
+    } else if key == "msExchModerationFlags" {
+        output_as_bitflags!(key, value, i32, ModerationFlags);
+        true
+    } else if key == "msExchProvisioningFlags" {
+        output_as_bitflags!(key, value, u32, ProvisioningFlags);
+        true
+    } else if key == "msExchRecipientDisplayType" {
+        output_as_enum!(key, value, i32, RecipientDisplayType);
+        true
+    } else if key == "msExchRecipientSoftDeletedStatus" {
+        output_as_bitflags!(key, value, u32, SoftDeletedStatus);
+        true
+    } else if key == "msExchRecipientTypeDetails" || key == "msExchPreviousRecipientTypeDetails" {
+        output_as_bitflags!(key, value, i64, RecipientTypeDetails);
+        true
+    } else if key == "msExchRoleGroupType" {
+        output_as_enum!(key, value, i32, RoleGroupType);
+        true
+    } else if key == "msExchTextMessagingState" {
+        output_as_struct!(@string, key, value, TextMessagingState);
+        true
+    } else if key == "msExchTransportRecipientSettingsFlags" {
+        output_as_bitflags!(key, value, i32, TransportSettingFlags);
+        true
+    } else if key == "msExchVersion" {
+        output_as_struct!(@string, key, value, ExchangeVersion);
+        true
+    } else if key == "internetEncoding" {
+        // technically Exchange as well
+        output_as_struct!(@string, key, value, InternetEncoding);
         true
     } else if key == "accountExpires" || key == "badPasswordTime" || key == "creationTime"
             || key == "lastLogoff" || key == "lastLogon" || key == "lastLogonTimestamp"

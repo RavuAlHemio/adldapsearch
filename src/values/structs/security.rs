@@ -1219,6 +1219,27 @@ impl CachedMembership {
     }
 }
 
+#[derive(Clone, Debug, Deserialize, Hash, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct RidPool {
+    pub next_rid_pool_start: u32,
+    pub total_rid_count: u32,
+}
+impl RidPool {
+    pub fn try_from_str(value: &str) -> Option<Self> {
+        // represented as i64 interpreted as u64
+        let signed: i64 = value.parse().ok()?;
+        let unsigned = signed as u64;
+
+        let next_rid_pool_start = ((unsigned >>  0) & 0xFFFF_FFFF).try_into().unwrap();
+        let total_rid_count = ((unsigned >> 32) & 0xFFFF_FFFF).try_into().unwrap();
+
+        Some(Self {
+            next_rid_pool_start,
+            total_rid_count,
+        })
+    }
+}
+
 pub fn logon_hours_to_string(logon_hours: &[u8]) -> Option<String> {
     if logon_hours.len() != 21 {
         return None;

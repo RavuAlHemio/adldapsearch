@@ -1,3 +1,6 @@
+pub mod exchange;
+
+
 use from_to_repr::{from_to_other, FromToRepr};
 use serde::{Deserialize, Serialize};
 
@@ -246,4 +249,14 @@ impl OmObjectClass {
             Self::Other(o) => o.as_slice(),
         }
     }
+}
+
+
+// https://learn.microsoft.com/en-us/windows/win32/adschema/a-serverstate
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[from_to_other(base_type = u32, derive_compare = "as_int")]
+pub(crate) enum ServerState {
+    Enabled = 1,
+    Disabled = 2,
+    Other(u32),
 }
