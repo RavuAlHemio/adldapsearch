@@ -449,7 +449,8 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
     } else if key == "msDS-KeyCredentialLink" {
         output_as_struct!(@string, key, value, KeyCredentialLinkBlob);
         true
-    } else if key == "rIDAvailablePool" {
+    } else if key == "rIDAllocationPool" || key == "rIDAvailablePool"
+            || key == "rIDPreviousAllocationPool" || key == "rIDUsedPool" {
         output_as_struct!(@string, key, value, RidPool);
         true
     } else if key == "msExchAddressBookFlags" {
