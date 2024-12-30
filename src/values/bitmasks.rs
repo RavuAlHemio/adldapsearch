@@ -44,7 +44,7 @@ bitflags! {
         const UNIVERSAL_GROUP = 0x00000008;
         const APP_BASIC_GROUP = 0x00000010;
         const APP_QUERY_GROUP = 0x00000020;
-        const SECURITY_ENABLED = -0x80000000;
+        const SECURITY_ENABLED = 0x80000000u32 as i32;
     }
 }
 
@@ -58,7 +58,7 @@ bitflags! {
         const ConfigAllowLimitedMove = 0x10000000;
         const ConfigAllowMove = 0x20000000;
         const ConfigAllowRename = 0x40000000;
-        const DisallowDelete = -0x80000000;
+        const DisallowDelete = 0x80000000u32 as i32;
     }
 
     #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -73,7 +73,7 @@ bitflags! {
         const ConfigAllowLimitedMove = 0x10000000;
         const ConfigAllowMove = 0x20000000;
         const ConfigAllowRename = 0x40000000;
-        const DisallowDelete = -0x80000000;
+        const DisallowDelete = 0x80000000u32 as i32;
     }
 
     #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -86,7 +86,7 @@ bitflags! {
         const ConfigAllowLimitedMove = 0x10000000;
         const ConfigAllowMove = 0x20000000;
         const ConfigAllowRename = 0x40000000;
-        const DisallowDelete = -0x80000000;
+        const DisallowDelete = 0x80000000u32 as i32;
     }
 
     #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
@@ -104,7 +104,7 @@ bitflags! {
         const ConfigAllowLimitedMove = 0x10000000;
         const ConfigAllowMove = 0x20000000;
         const ConfigAllowRename = 0x40000000;
-        const DisallowDelete = -0x80000000;
+        const DisallowDelete = 0x80000000u32 as i32;
     }
 }
 
