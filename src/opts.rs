@@ -88,6 +88,16 @@ containing ACLs are not returned at all.",
     pub avoid_sacl: bool,
 
     #[arg(
+        short = 'p', long,
+        help = "Requests that the server returns search results page by page.",
+        long_help = "Requests that the server returns search results page by page.
+
+This uses the Simple Paged Results control from RFC2696, which the server must
+support.",
+    )]
+    pub paginate: Option<i32>,
+
+    #[arg(
         help = "The LDAP filter by which to select relevant entries.",
         long_help = "The LDAP filter by which to select relevant entries.
 

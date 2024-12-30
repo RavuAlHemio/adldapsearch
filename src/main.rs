@@ -8,6 +8,7 @@ use std::collections::BTreeMap;
 
 use clap::Parser;
 use ldap3::{Ldap, LdapConnAsync, Scope, SearchEntry};
+use ldap3::adapters::{Adapter, PagedResults};
 use rpassword;
 
 use crate::opts::{Credentials, Opts};
@@ -111,15 +112,31 @@ async fn run() {
         ldap.with_controls(avoid_sacl_control);
     }
 
-    let (results, _response) = ldap.search(
+    let mut adapters: Vec<Box<dyn Adapter<_, _>>> = Vec::with_capacity(1);
+    if let Some(paginate) = o.paginate {
+        let page_adapter = PagedResults::new(paginate);
+        adapters.push(Box::new(page_adapter));
+    }
+
+    let mut search_stream = ldap.streaming_search_with(
+        adapters,
         &base_dn,
         o.scope.into(),
         filter,
         o.attributes.as_slice(),
     )
-        .await.expect("search failed")
-        .success().expect("search returned error");
-    for result_entry in results {
+        .await.expect("search failed");
+    loop {
+        let result_entry = match search_stream.next().await {
+            Ok(Some(re)) => re,
+            Ok(None) => break,
+            Err(e) => panic!("obtaining search results failed: {}", e),
+        };
+        if result_entry.is_ref() {
+            // I care not for such trifles
+            continue;
+        }
+
         let entry = SearchEntry::construct(result_entry);
         println!();
         println!("dn: {}", entry.dn);
