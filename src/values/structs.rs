@@ -4,4 +4,5 @@ pub(crate) mod exchange;
 pub(crate) mod replication;
 pub(crate) mod schema;
 pub(crate) mod security;
+pub(crate) mod terminal_services;
 pub(crate) mod trust;

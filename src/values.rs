@@ -41,6 +41,7 @@ use crate::values::structs::security::{
     CachedMembership, logon_hours_to_string, RidPool, SecurityDescriptor,
 };
 use crate::values::structs::security::key_credential_link::KeyCredentialLinkBlob;
+use crate::values::structs::terminal_services::UserParameters;
 use crate::values::structs::trust::TrustForestTrustInfo;
 
 
@@ -610,6 +611,9 @@ pub(crate) fn output_special_binary_value(key: &str, value: &[u8]) -> bool {
         true
     } else if key == "oMObjectClass" {
         output_as_enum!(@bytes, key, value, OmObjectClass);
+        true
+    } else if key == "userParameters" {
+        output_as_struct!(key, value, UserParameters);
         true
     } else {
         false
