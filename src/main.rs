@@ -1,3 +1,4 @@
+mod macros;
 mod oid_prefix;
 mod opts;
 mod values;

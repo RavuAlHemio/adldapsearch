@@ -3,6 +3,8 @@ use chrono::TimeDelta;
 use from_to_repr::from_to_other;
 use serde::{Deserialize, Serialize};
 
+use crate::extract_bits;
+
 
 #[derive(Clone, Debug, Deserialize, Hash, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct UserParameters {
@@ -85,8 +87,8 @@ impl UserParameters {
     fn decode_squished_utf16_value(value_slice: &[u16]) -> Option<Vec<u8>> {
         let mut ret = Vec::with_capacity(value_slice.len());
         for word in value_slice {
-            let top_byte: u8 = ((*word >> 0) & 0xFF).try_into().unwrap();
-            let bottom_byte: u8 = ((*word >> 8) & 0xFF).try_into().unwrap();
+            let top_byte: u8 = extract_bits!(*word, 0, 8);
+            let bottom_byte: u8 = extract_bits!(*word, 8, 8);
             let top_nibble = Self::decode_squished_byte_nibble(top_byte)?;
             let bottom_nibble = Self::decode_squished_byte_nibble(bottom_byte)?;
             assert!(top_nibble <= 0xF && bottom_nibble <= 0xF);

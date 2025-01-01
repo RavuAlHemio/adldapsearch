@@ -4,6 +4,8 @@ use std::ops::Range;
 
 use num_bigint::BigUint;
 
+use crate::{bit_is_set, extract_bits_noconvert};
+
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct OidPrefix {
@@ -14,7 +16,7 @@ impl OidPrefix {
     fn take_ber_integer_slice(bytes: &[u8]) -> (&[u8], &[u8]) {
         let mut split_index = 0;
         while split_index < bytes.len() {
-            let is_continuation = (bytes[split_index] & 0b1000_0000) != 0;
+            let is_continuation = bit_is_set!(bytes[split_index], 7);
             split_index += 1;
             if !is_continuation {
                 return bytes.split_at(split_index);
@@ -26,21 +28,21 @@ impl OidPrefix {
     fn is_terminated_ber_integer(bytes: &[u8]) -> bool {
         assert_ne!(bytes.len(), 0);
         for b in &bytes[0..bytes.len()-1] {
-            if (*b & 0b1000_0000) == 0 {
+            if !bit_is_set!(*b, 7) {
                 // all bytes in the middle must have the continuation bit set
                 return false;
             }
         }
 
         // the final byte must have the continuation bit unset
-        (bytes.last().unwrap() & 0b1000_0000) == 0
+        !bit_is_set!(bytes.last().unwrap(), 7)
     }
 
     fn extract_ber_integer(bytes: &[u8]) -> BigUint {
         assert!(Self::is_terminated_ber_integer(bytes));
         let mut value = BigUint::from(0u8);
         for b in bytes {
-            let without_continuation_bit = *b & 0b0111_1111;
+            let without_continuation_bit = extract_bits_noconvert!(*b, 0, 7);
             value <<= 7;
             value |= BigUint::from(without_continuation_bit);
         }

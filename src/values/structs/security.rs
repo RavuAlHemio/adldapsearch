@@ -9,6 +9,7 @@ use from_to_repr::from_to_other;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::{bit_is_set, extract_bits};
 use crate::values::nul_terminated_utf16le_string;
 
 
@@ -650,7 +651,7 @@ impl Ace {
 
                 let mut payload_offset = 8;
 
-                let object_type = if object_flags & 0b01 == 0 {
+                let object_type = if !bit_is_set!(object_flags, 0) {
                     None
                 } else {
                     if payload.len() - payload_offset < 16 {
@@ -661,7 +662,7 @@ impl Ace {
                     Some(uuid)
                 };
 
-                let inherited_object_type = if object_flags & 0b10 == 0 {
+                let inherited_object_type = if !bit_is_set!(object_flags, 1) {
                     None
                 } else {
                     if payload.len() - payload_offset < 16 {
@@ -1230,8 +1231,8 @@ impl RidPool {
         let signed: i64 = value.parse().ok()?;
         let unsigned = signed as u64;
 
-        let next_rid_pool_start = ((unsigned >>  0) & 0xFFFF_FFFF).try_into().unwrap();
-        let total_rid_count = ((unsigned >> 32) & 0xFFFF_FFFF).try_into().unwrap();
+        let next_rid_pool_start = extract_bits!(unsigned, 0, 32);
+        let total_rid_count = extract_bits!(unsigned, 32, 32);
 
         Some(Self {
             next_rid_pool_start,

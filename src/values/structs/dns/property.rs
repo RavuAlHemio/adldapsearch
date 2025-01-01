@@ -5,6 +5,7 @@ use chrono::{DateTime, Utc};
 use from_to_repr::from_to_other;
 use serde::{Deserialize, Serialize};
 
+use crate::{bit_is_set, extract_bits};
 use crate::values::utc_seconds_relative_to_1601;
 
 
@@ -398,9 +399,9 @@ impl DnsAddr {
             },
         };
 
-        let dns_over_tcp_available = (flags & 0b1000_0000) != 0;
-        let rtt_10ms = u16::try_from((flags >> 12) & 0b0011_1111_1111).unwrap();
-        let validation_status_u16 = u16::try_from((flags >> 0) & 0b0011_1111_1111).unwrap();
+        let dns_over_tcp_available = !bit_is_set!(flags, 31);
+        let rtt_10ms = extract_bits!(flags, 12, 12);
+        let validation_status_u16: u16 = extract_bits!(flags, 0, 12);
         let validation_status: DnsValidationStatus = validation_status_u16.into();
 
         Some(Self {
