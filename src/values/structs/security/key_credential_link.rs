@@ -160,14 +160,16 @@ impl KeyCredentialLinkEntry {
                         flags,
                     }))
                 } else {
-                    if data_slice.len() < 18 {
-                        None
-                    } else {
-                        let volume_type = VolumeType::from_base_type(data_slice[2]);
-                        let supports_notification = Boolean8::from_base_type(data_slice[3]);
-                        let fek_key_version = data_slice[4];
-                        let key_strength = KeyStrength::from_base_type(data_slice[5]);
-                        let reserved: [u8; 10] = data_slice[6..16].try_into().unwrap();
+                    let volume_type = VolumeType::from_base_type(data_slice[2]);
+
+                    let supports_notification = data_slice.get(3).copied()
+                        .map(|b| Boolean8::from_base_type(b));
+                    let fek_key_version = data_slice.get(4).copied();
+                    let key_strength = data_slice.get(5).copied()
+                        .map(|b| KeyStrength::from_base_type(b));
+                    let reserved_length = (data_slice.len() - 6).min(10);
+                    let reserved = data_slice[6..6+reserved_length].to_vec();
+                    let encoded_extended_cki = if data_slice.len() > 17 {
                         let extended_version = data_slice[16];
                         let extended_size = data_slice[17];
                         let extended_size_usize: usize = extended_size.into();
@@ -176,22 +178,24 @@ impl KeyCredentialLinkEntry {
                             None
                         } else {
                             let extended_data = data_slice[18..].to_vec();
-
-                            Some(Self::CustomKeyInformationLong(CustomKeyInformationLong {
-                                version,
-                                flags,
-                                volume_type,
-                                supports_notification,
-                                fek_key_version,
-                                key_strength,
-                                reserved,
-                                encoded_extended_cki: EncodedExtendedCki {
-                                    version: extended_version,
-                                    cbor_data: extended_data,
-                                },
-                            }))
+                            Some(EncodedExtendedCki {
+                                version: extended_version,
+                                cbor_data: extended_data,
+                            })
                         }
-                    }
+                    } else {
+                        None
+                    };
+                    Some(Self::CustomKeyInformationLong(CustomKeyInformationLong {
+                        version,
+                        flags,
+                        volume_type,
+                        supports_notification,
+                        fek_key_version,
+                        key_strength,
+                        reserved,
+                        encoded_extended_cki,
+                    }))
                 }
             },
             0x08|0x09 => {
@@ -243,11 +247,11 @@ pub struct CustomKeyInformationLong {
     pub version: u8,
     pub flags: CkiFlags,
     pub volume_type: VolumeType,
-    pub supports_notification: Boolean8,
-    pub fek_key_version: u8,
-    pub key_strength: KeyStrength,
-    pub reserved: [u8; 10],
-    pub encoded_extended_cki: EncodedExtendedCki,
+    pub supports_notification: Option<Boolean8>,
+    pub fek_key_version: Option<u8>,
+    pub key_strength: Option<KeyStrength>,
+    pub reserved: Vec<u8>,
+    pub encoded_extended_cki: Option<EncodedExtendedCki>,
 }
 
 // https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-adts/b2c0cb9b-e49e-4907-9235-f9fd7eee8c13
