@@ -1248,9 +1248,10 @@ pub fn logon_hours_to_string(logon_hours: &[u8]) -> Option<String> {
     let mut ret = concat!(
         "  |          11111111112222\n",
         "  |012345678901234567890123\n",
-        "  +------------------------\n",
+        "  +------------------------",
     ).to_owned();
     for (i, chunk) in logon_hours.chunks(3).enumerate() {
+        ret.push('\n');
         let weekday = match i {
             0 => "Su",
             1 => "Mo",
@@ -1276,7 +1277,6 @@ pub fn logon_hours_to_string(logon_hours: &[u8]) -> Option<String> {
                 ret.push(' ');
             }
         }
-        ret.push('\n');
     }
     Some(ret)
 }

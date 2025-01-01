@@ -14,9 +14,9 @@ pub fn dfsr_schedule_to_string(schedule: &[u8]) -> Option<String> {
     for _ in 0..24 {
         write!(ret, "\u{2582}\u{2584}\u{2586}\u{2588}").unwrap();
     }
-    write!(ret, "\n").unwrap();
 
     for (weekday_index, weekday_slice) in schedule.chunks(48).enumerate() {
+        write!(ret, "\n").unwrap();
         let weekday = match weekday_index {
             0 => "Su",
             1 => "Mo",
@@ -31,7 +31,6 @@ pub fn dfsr_schedule_to_string(schedule: &[u8]) -> Option<String> {
         for b in weekday_slice {
             write!(ret, "{:02X}", b).unwrap();
         }
-        write!(ret, "\n").unwrap();
     }
 
     Some(ret)
