@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{bit_is_set, extract_bits};
 
 
-#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub(crate) struct TextMessagingState {
     pub m2p_priority: u8,
     pub p2p_priority: u8,
@@ -49,7 +49,7 @@ impl TextMessagingState {
 }
 
 
-#[derive(Clone, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub(crate) struct ExchangeVersion {
     // do_not_care: u6
     pub major: u8,
@@ -113,7 +113,7 @@ impl fmt::Debug for ExchangeVersion {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub(crate) struct InternetEncoding {
     // do_not_care: u17
     pub use_preferred_message_format: bool, // u1
@@ -148,7 +148,7 @@ impl InternetEncoding {
 }
 
 
-#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum MessageFormat {
     Text,
     Mime,
@@ -159,7 +159,7 @@ impl MessageFormat {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 #[repr(u8)]
 pub enum BodyFormat {
     Text = 0,
@@ -167,7 +167,7 @@ pub enum BodyFormat {
     TextAndHtml = 2,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
 #[repr(u8)]
 pub enum MacAttachmentFormat {
     BinHex = 0,
