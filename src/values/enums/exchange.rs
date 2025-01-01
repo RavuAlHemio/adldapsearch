@@ -204,3 +204,12 @@ pub(crate) enum RoleGroupType {
 
     Other(i32),
 }
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[from_to_other(base_type = u32, derive_compare = "as_int")]
+pub(crate) enum GroupJoinLeaveRestriction {
+    Closed = 0,
+    Open = 1,
+    ApprovalRequired = 2,
+    Other(u32),
+}

@@ -123,4 +123,45 @@ bitflags! {
         const HAS_DEVICE_PARTNERSHIP = 0x0000_0001;
         const ACTIVE_SYNC_SUPPRESS_READ_RECEIPT = 0x0000_0002;
     }
+
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub(crate) struct LocalizationFlags : i32 {
+        const LOCALIZATION_DISABLED = 0x0000_0001;
+    }
+
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub(crate) struct MailboxFolderSet : i32 {
+        const GLOBAL_ADDRESS_LIST_ENABLED = 0x0000_0001;
+        const CALENDAR_ENABLED = 0x0000_0002;
+        const CONTACTS_ENABLED = 0x0000_0004;
+        const TASKS_ENABLED = 0x0000_0008;
+        const JOURNAL_ENABLED = 0x0000_0010;
+        const NOTES_ENABLED = 0x0000_0020;
+        const PUBLIC_FOLDERS_ENABLED = 0x0000_0040;
+        const ORGANIZATION_ENABLED = 0x0000_0080;
+        const REMINDERS_AND_NOTIFICATIONS_ENABLED = 0x0000_0100;
+        const PREMIUM_CLIENT_ENABLED = 0x0000_0200;
+        const SPELL_CHECKER_ENABLED = 0x0000_0400;
+        const S_MIME_ENABLED = 0x0000_0800;
+        const SEARCH_FOLDERS_ENABLED = 0x0000_1000;
+        const SIGNATURES_ENABLED = 0x0000_2000;
+        const RULES_ENABLED = 0x0000_4000;
+        const THEME_SELECTION_ENABLED = 0x0000_8000;
+        const JUNK_EMAIL_ENABLED = 0x0001_0000;
+        const UM_INTEGRATION_ENABLED = 0x0002_0000;
+        const WSS_ACCESS_ON_PUBLIC_COMPUTERS_ENABLED = 0x0004_0000;
+        const WSS_ACCESS_ON_PRIVATE_COMPUTERS_ENABLED = 0x0008_0000;
+        const UNC_ACCESS_ON_PUBLIC_COMPUTERS_ENABLED = 0x0010_0000;
+        const UNC_ACCESS_ON_PRIVATE_COMPUTERS_ENABLED = 0x0020_0000;
+        const ACTIVE_SYNC_INTEGRATION_ENABLED = 0x0040_0000;
+        const EXPLICIT_LOGON_ENABLED = 0x0080_0000;
+        const ALL_ADDRESS_LISTS_ENABLED = 0x0100_0000;
+        const RECOVER_DELETED_ITEMS_ENABLED = 0x0200_0000;
+        const CHANGE_PASSWORD_ENABLED = 0x0400_0000;
+        const INSTANT_MESSAGING_ENABLED = 0x0800_0000;
+        const TEXT_MESSAGING_ENABLED = 0x1000_0000;
+        const OWA_LIGHT_ENABLED = 0x2000_0000;
+        const DELEGATE_ACCESS_ENABLED = 0x4000_0000;
+        const IRM_ENABLED = 0x8000_0000u32 as i32;
+    }
 }

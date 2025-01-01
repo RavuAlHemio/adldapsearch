@@ -19,19 +19,24 @@ use crate::values::bitmasks::{
     UserAccountControl,
 };
 use crate::values::bitmasks::exchange::{
-    AddressBookFlags, ElcMailboxFlags, ModerationFlags, MobileMailboxFlags, ProvisioningFlags,
-    RecipientTypeDetails, SoftDeletedStatus, TransportSettingFlags,
+    AddressBookFlags, ElcMailboxFlags, LocalizationFlags, MailboxFolderSet, ModerationFlags,
+    MobileMailboxFlags, ProvisioningFlags, RecipientTypeDetails, SoftDeletedStatus,
+    TransportSettingFlags,
 };
 use crate::values::enums::{
     AttributeSyntax, FunctionalityLevel, ObjectClassCategory, OmObjectClass, OmSyntax,
     ReplAuthenticationMode, Rid, SamAccountType, ServerState, TrustType,
 };
-use crate::values::enums::exchange::{CapabilityIdentifier, RecipientDisplayType, RoleGroupType};
+use crate::values::enums::exchange::{
+    CapabilityIdentifier, GroupJoinLeaveRestriction, RecipientDisplayType, RoleGroupType,
+};
 use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dfsr::dfsr_schedule_to_string;
 use crate::values::structs::dns::property::DnsProperty;
 use crate::values::structs::dns::record::DnsRecord;
-use crate::values::structs::exchange::{ExchangeVersion, InternetEncoding, TextMessagingState};
+use crate::values::structs::exchange::{
+    ExchangeVersion, GroupSecurityFlags, InternetEncoding, MailboxFolderSet2, TextMessagingState,
+};
 use crate::values::structs::replication::{
     DsaSignatureState1, DsCorePropagationData, PartialAttributeSet, ReplPropertyMetaData,
     ReplUpToDateVector2, RepsFromTo, SiteAffinity,
@@ -460,8 +465,23 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
     } else if key == "msExchCapabilityIdentifiers" {
         output_as_enum!(key, value, u32, CapabilityIdentifier);
         true
+    } else if key == "msExchGroupDepartRestriction" || key == "msExchGroupJoinRestriction" {
+        output_as_enum!(key, value, u32, GroupJoinLeaveRestriction);
+        true
     } else if key == "msExchELCMailboxFlags" {
         output_as_bitflags!(key, value, u32, ElcMailboxFlags);
+        true
+    } else if key == "msExchGroupSecurityFlags" {
+        output_as_struct!(@string, key, value, GroupSecurityFlags);
+        true
+    } else if key == "msExchLocalizationFlags" {
+        output_as_bitflags!(key, value, i32, LocalizationFlags);
+        true
+    } else if key == "msExchMailboxFolderSet" {
+        output_as_bitflags!(key, value, i32, MailboxFolderSet);
+        true
+    } else if key == "msExchMailboxFolderSet2" {
+        output_as_struct!(@string, key, value, MailboxFolderSet2);
         true
     } else if key == "msExchMobileMailboxFlags" {
         output_as_bitflags!(key, value, i32, MobileMailboxFlags);

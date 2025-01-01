@@ -175,3 +175,163 @@ pub enum MacAttachmentFormat {
     AppleSingle = 2,
     AppleDouble = 3,
 }
+
+#[derive(Clone, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct GroupSecurityFlags {
+    // u1 reserved
+    pub access_type: GroupAccessType, // u2
+    pub activity_status: bool, // u1
+}
+impl GroupSecurityFlags {
+    pub fn try_from_str(value: &str) -> Option<Self> {
+        // represented as a signed 32-bit integer interpreted as an unsigned 32-bit integer
+        let signed: i32 = value.parse().ok()?;
+        let unsigned = signed as u32;
+
+        // xxxx xxxx xxxx xxxx xxxx xxxx xxxx STTx
+        let access_type_u8 = extract_bits!(unsigned, 1, 2);
+        let access_type = GroupAccessType::try_from_repr(access_type_u8).unwrap();
+        let activity_status = bit_is_set!(unsigned, 3);
+
+        Some(Self {
+            access_type,
+            activity_status,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[repr(u8)]
+pub enum GroupAccessType {
+    None = 0,
+    Private = 1,
+    Secret = 2,
+    Public = 3,
+}
+
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+pub(crate) struct MailboxFolderSet2 {
+    pub force_save_attachment_filtering_enabled: bool, // u1 (0)
+    pub silverlight_enabled: bool, // u1 (1)
+    pub anonymous_features_enabled: bool, // u1 (2)
+    pub unknown3: bool, // u1 (3)
+    pub unknown4: bool, // u1 (4)
+    pub owa_mini_enabled: bool, // u1 (5)
+    pub places_enabled: bool, // u1 (6)
+    pub allow_offline_on: AllowOfflineOn, // u2 (7:8)
+    pub display_photos_enabled: bool, // u1 (9)
+    pub set_photo_enabled: bool, // u1 (10)
+    pub logon_page_light_selection_enabled: bool, // u1 (11)
+    pub logon_page_public_private_selection_enabled: bool, // u1 (12)
+    pub predicted_actions_enabled: bool, // u1 (13)
+    pub integrated_features_enabled: bool, // u1 (14)
+    pub user_diagnostic_enabled: bool, // u1 (15)
+    pub facebook_enabled: bool, // u1 (16)
+    pub linked_in_enabled: bool, // u1 (17)
+    pub wac_external_services_enabled: bool, // u1 (18)
+    pub wac_omex_enabled: bool, // u1 (19)
+    pub web_parts_frame_options: WebPartsFrameOptions, // u2 (20:21)
+    pub allow_copy_contacts_to_device_address_book: bool, // u1 (22)
+    pub report_junk_mail_enabled: bool, // u1 (23)
+    pub group_creation_enabled: bool, // u1 (24)
+    pub skip_create_unified_group_custom_sharepoint_classification: bool, // u1 (25)
+    pub weather_enabled: bool, // u1 (26)
+    pub user_voice_enabled: bool, // u1 (27)
+    pub satisfaction_enabled: bool, // u1 (28)
+    pub fre_cards_enabled: bool, // u1 (29)
+    pub unknown30: bool, // u1 (30)
+    pub on_send_addins_disabled: bool, // u1 (31)
+}
+impl MailboxFolderSet2 {
+    pub fn try_from_str(value: &str) -> Option<Self> {
+        // represented as a signed 32-bit integer interpreted as an unsigned 32-bit integer
+        let signed: i32 = value.parse().ok()?;
+        let unsigned = signed as u32;
+
+        let force_save_attachment_filtering_enabled = bit_is_set!(unsigned, 0);
+        let silverlight_enabled = bit_is_set!(unsigned, 1);
+        let anonymous_features_enabled = bit_is_set!(unsigned, 2);
+        let unknown3 = bit_is_set!(unsigned, 3);
+        let unknown4 = bit_is_set!(unsigned, 4);
+        let owa_mini_enabled = bit_is_set!(unsigned, 5);
+        let places_enabled = bit_is_set!(unsigned, 6);
+        let allow_offline_on_u8 = extract_bits!(unsigned, 7, 2);
+        let display_photos_enabled = bit_is_set!(unsigned, 9);
+        let set_photo_enabled = bit_is_set!(unsigned, 10);
+        let logon_page_light_selection_enabled = bit_is_set!(unsigned, 11);
+        let logon_page_public_private_selection_enabled = bit_is_set!(unsigned, 12);
+        let predicted_actions_enabled = bit_is_set!(unsigned, 13);
+        let integrated_features_enabled = bit_is_set!(unsigned, 14);
+        let user_diagnostic_enabled = bit_is_set!(unsigned, 15);
+        let facebook_enabled = bit_is_set!(unsigned, 16);
+        let linked_in_enabled = bit_is_set!(unsigned, 17);
+        let wac_external_services_enabled = bit_is_set!(unsigned, 18);
+        let wac_omex_enabled = bit_is_set!(unsigned, 19);
+        let web_parts_frame_options_u8 = extract_bits!(unsigned, 20, 2);
+        let allow_copy_contacts_to_device_address_book = bit_is_set!(unsigned, 22);
+        let report_junk_mail_enabled = bit_is_set!(unsigned, 23);
+        let group_creation_enabled = bit_is_set!(unsigned, 24);
+        let skip_create_unified_group_custom_sharepoint_classification = bit_is_set!(unsigned, 25);
+        let weather_enabled = bit_is_set!(unsigned, 26);
+        let user_voice_enabled = bit_is_set!(unsigned, 27);
+        let satisfaction_enabled = bit_is_set!(unsigned, 28);
+        let fre_cards_enabled = bit_is_set!(unsigned, 29);
+        let unknown30 = bit_is_set!(unsigned, 30);
+        let on_send_addins_disabled = bit_is_set!(unsigned, 31);
+
+        let allow_offline_on = AllowOfflineOn::try_from_repr(allow_offline_on_u8).unwrap();
+        let web_parts_frame_options = WebPartsFrameOptions::try_from_repr(web_parts_frame_options_u8).unwrap(); // u2 (20:21);
+
+        Some(Self {
+            force_save_attachment_filtering_enabled,
+            silverlight_enabled,
+            anonymous_features_enabled,
+            unknown3,
+            unknown4,
+            owa_mini_enabled,
+            places_enabled,
+            allow_offline_on,
+            display_photos_enabled,
+            set_photo_enabled,
+            logon_page_light_selection_enabled,
+            logon_page_public_private_selection_enabled,
+            predicted_actions_enabled,
+            integrated_features_enabled,
+            user_diagnostic_enabled,
+            facebook_enabled,
+            linked_in_enabled,
+            wac_external_services_enabled,
+            wac_omex_enabled,
+            web_parts_frame_options,
+            allow_copy_contacts_to_device_address_book,
+            report_junk_mail_enabled,
+            group_creation_enabled,
+            skip_create_unified_group_custom_sharepoint_classification,
+            weather_enabled,
+            user_voice_enabled,
+            satisfaction_enabled,
+            fre_cards_enabled,
+            unknown30,
+            on_send_addins_disabled,
+        })
+    }
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[repr(u8)]
+pub enum AllowOfflineOn {
+    Unknown = 0,
+    PrivateComputersOnly = 1,
+    NoComputers = 2,
+    AllComputers = 3,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, FromToRepr, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+#[repr(u8)]
+pub enum WebPartsFrameOptions {
+    Deny = 0,
+    AllowFrom = 1,
+    None = 2,
+    SameOrigin = 3,
+}
