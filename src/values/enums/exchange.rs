@@ -213,3 +213,12 @@ pub(crate) enum GroupJoinLeaveRestriction {
     ApprovalRequired = 2,
     Other(u32),
 }
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+#[from_to_other(base_type = u32, derive_compare = "as_int")]
+pub(crate) enum DeletedItemFlags {
+    DatabaseDefault = 0,
+    RetainUntilBackupOrCustomPeriod = 3,
+    RetainForCustomPeriod = 5,
+    Other(u32),
+}

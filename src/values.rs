@@ -19,16 +19,17 @@ use crate::values::bitmasks::{
     UserAccountControl,
 };
 use crate::values::bitmasks::exchange::{
-    AddressBookFlags, ElcMailboxFlags, LocalizationFlags, MailboxFolderSet, ModerationFlags,
-    MobileMailboxFlags, ProvisioningFlags, RecipientTypeDetails, SoftDeletedStatus,
-    TransportSettingFlags,
+    AddressBookFlags, DeviceClientType, ElcMailboxFlags, LocalizationFlags, MailboxAuditOperations,
+    MailboxFolderSet, ModerationFlags, MobileMailboxFlags, ProvisioningFlags, RecipientTypeDetails,
+    SoftDeletedStatus, TransportSettingFlags,
 };
 use crate::values::enums::{
     AttributeSyntax, FunctionalityLevel, ObjectClassCategory, OmObjectClass, OmSyntax,
     ReplAuthenticationMode, Rid, SamAccountType, ServerState, TrustType,
 };
 use crate::values::enums::exchange::{
-    CapabilityIdentifier, GroupJoinLeaveRestriction, RecipientDisplayType, RoleGroupType,
+    CapabilityIdentifier, DeletedItemFlags, GroupJoinLeaveRestriction, RecipientDisplayType,
+    RoleGroupType,
 };
 use crate::values::oids::KNOWN_OIDS;
 use crate::values::structs::dfsr::dfsr_schedule_to_string;
@@ -459,11 +460,21 @@ pub(crate) fn output_special_string_value(key: &str, value: &str, object_classes
             || key == "rIDPreviousAllocationPool" || key == "rIDUsedPool" {
         output_as_struct!(@string, key, value, RidPool);
         true
+    } else if key == "deletedItemFlags" {
+        output_as_enum!(key, value, u32, DeletedItemFlags);
+        true
     } else if key == "msExchAddressBookFlags" {
         output_as_bitflags!(key, value, i32, AddressBookFlags);
         true
+    } else if key == "msExchAuditAdmin" || key == "msExchAuditDelegate"
+            || key == "msExchAuditDelegateAdmin" || key == "msExchAuditOwner" {
+        output_as_bitflags!(key, value, i32, MailboxAuditOperations);
+        true
     } else if key == "msExchCapabilityIdentifiers" {
         output_as_enum!(key, value, u32, CapabilityIdentifier);
+        true
+    } else if key == "msExchDeviceClientType" {
+        output_as_bitflags!(key, value, i32, DeviceClientType);
         true
     } else if key == "msExchGroupDepartRestriction" || key == "msExchGroupJoinRestriction" {
         output_as_enum!(key, value, u32, GroupJoinLeaveRestriction);

@@ -164,4 +164,34 @@ bitflags! {
         const DELEGATE_ACCESS_ENABLED = 0x4000_0000;
         const IRM_ENABLED = 0x8000_0000u32 as i32;
     }
+
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub(crate) struct MailboxAuditOperations : i32 {
+        const UPDATE = 0x0000_0001;
+        const COPY = 0x0000_0002;
+        const MOVE = 0x0000_0004;
+        const MOVE_TO_DELETED_ITEMS = 0x0000_0008;
+        const SOFT_DELETE = 0x0000_0010;
+        const HARD_DELETE = 0x0000_0020;
+        const FOLDER_BIND = 0x0000_0040;
+        const SEND_AS = 0x0000_0080;
+        const SEND_ON_BEHALF = 0x0000_0100;
+        const MESSAGE_BIND = 0x0000_0200;
+        const CREATE = 0x0000_0400;
+        const MAILBOX_LOGIN = 0x0000_0800;
+        const UPDATE_FOLDER_PERMISSIONS = 0x0000_1000;
+        const ADD_FOLDER_PERMISSIONS = 0x0000_2000;
+        const MODIFY_FOLDER_PERMISSIONS = 0x0000_4000;
+        const REMOVE_FOLDER_PERMISSIONS = 0x0000_8000;
+        const UPDATE_INBOX_RULES = 0x0001_0000;
+        const UPDATE_CALENDAR_DELEGATION = 0x0002_0000;
+    }
+
+    #[derive(Clone, Copy, Debug, Deserialize, Eq, Hash, Ord, PartialEq, PartialOrd, Serialize)]
+    pub(crate) struct DeviceClientType : i32 {
+        const EAS = 0x0000_0001;
+        const MOWA = 0x0000_0002;
+        const OUTLOOK = 0x0000_0004;
+        const REST = 0x0000_0008;
+    }
 }
