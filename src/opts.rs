@@ -9,12 +9,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Parser)]
 pub(crate) struct Opts {
     #[arg(
-        short = 'b', long,
+        short = 'H', long,
         help = "The URL of the LDAP server to connect to.",
         long_help = "The URL of the LDAP server to connect to, such as `ldap://ldap.example.com/`,
 `ldap://ldap.example.com:3268/` or `ldaps://ldap.example.com/`.",
     )]
-    #[arg(short = 'H', long)]
     pub url: String,
 
     #[arg(
